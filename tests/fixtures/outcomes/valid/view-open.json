@@ -1,0 +1,12 @@
+{
+  "record": "node_view",
+  "schema_version": 1,
+  "run_id": "run-0001",
+  "node": {
+    "graph_id": "review_pilot",
+    "node_id": "cs_ci",
+    "revision": 2
+  },
+  "status": "open",
+  "blocked_reason": "waiting for cs_patch receipt rcpt-patch-1 to be admitted"
+}

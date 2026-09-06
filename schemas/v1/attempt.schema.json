@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://checkspan.invalid/schemas/v1/attempt.schema.json",
+  "title": "Attempt",
+  "description": "One attempt of one node within one run: who owns it, the evidence and dependency receipts frozen at dispatch, the result and produced evidence sealed before checking, how execution ended, and the verifier receipt once one exists. An attempt has no acceptance field; execution outcome is never a verdict.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["record", "schema_version", "run_id", "node", "number", "owner", "started_at"],
+  "properties": {
+    "record": { "const": "attempt" },
+    "schema_version": { "const": 1 },
+    "run_id": { "$ref": "common.schema.json#/$defs/identifier" },
+    "node": { "$ref": "node-ref.schema.json" },
+    "number": { "$ref": "common.schema.json#/$defs/attempt_number" },
+    "owner": { "$ref": "common.schema.json#/$defs/text" },
+    "started_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "finished_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "repair_hint": { "$ref": "common.schema.json#/$defs/text" },
+    "input_manifest": {
+      "type": "array",
+      "items": { "$ref": "evidence-ref.schema.json" }
+    },
+    "dependency_receipts": {
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/receipt_ref" }
+    },
+    "result": { "$ref": "#/$defs/result" },
+    "produced_evidence": {
+      "type": "array",
+      "items": { "$ref": "evidence-ref.schema.json" }
+    },
+    "execution": { "$ref": "#/$defs/execution" },
+    "verifier_receipt": { "$ref": "common.schema.json#/$defs/receipt_ref" }
+  },
+  "allOf": [
+    {
+      "if": { "required": ["execution"] },
+      "then": { "required": ["finished_at"] },
+      "else": { "not": { "required": ["finished_at"] } }
+    },
+    {
+      "if": { "required": ["result"] },
+      "then": { "required": ["execution"] }
+    },
+    {
+      "if": { "required": ["verifier_receipt"] },
+      "then": {
+        "required": ["result", "execution"],
+        "properties": {
+          "execution": { "properties": { "outcome": { "const": "completed" } } }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "execution": {
+      "description": "How execution ended. completed, failed, timed_out, and cancelled are execution outcomes; none is a verdict.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome"],
+      "properties": {
+        "outcome": { "enum": ["completed", "failed", "timed_out", "cancelled"] },
+        "error_code": { "$ref": "common.schema.json#/$defs/identifier" },
+        "error_text": { "$ref": "common.schema.json#/$defs/text" }
+      }
+    },
+    "result": {
+      "description": "The candidate the attempt produced.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "artifact_ref", "digest"],
+      "properties": {
+        "type": { "$ref": "common.schema.json#/$defs/type_ref" },
+        "artifact_ref": { "$ref": "common.schema.json#/$defs/text" },
+        "digest": { "$ref": "common.schema.json#/$defs/digest" }
+      }
+    }
+  }
+}

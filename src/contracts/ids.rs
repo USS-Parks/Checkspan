@@ -156,6 +156,11 @@ positive_u32!(
     "version",
     "Version of a schema, policy, or verifier, starting at 1."
 );
+positive_u32!(
+    AttemptNumber,
+    "attempt number",
+    "Attempt number of one node within one run, starting at 1. Every started attempt counts."
+);
 
 /// Content digest: `sha256:` followed by 64 lowercase hex digits.
 ///

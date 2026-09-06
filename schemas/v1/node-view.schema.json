@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://checkspan.invalid/schemas/v1/node-view.schema.json",
+  "title": "NodeView",
+  "description": "Derived, read-only status of one node within one run. accepted and rejected must name the verifier receipt that determined them; no other status may carry one. Workers cannot write this record.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["record", "schema_version", "run_id", "node", "status"],
+  "properties": {
+    "record": { "const": "node_view" },
+    "schema_version": { "const": 1 },
+    "run_id": { "$ref": "common.schema.json#/$defs/identifier" },
+    "node": { "$ref": "node-ref.schema.json" },
+    "status": { "enum": ["open", "running", "accepted", "rejected", "failed", "gated", "cancelled"] },
+    "current_attempt": { "$ref": "common.schema.json#/$defs/attempt_number" },
+    "receipt": { "$ref": "common.schema.json#/$defs/receipt_ref" },
+    "blocked_reason": { "$ref": "common.schema.json#/$defs/text" },
+    "waiting_on_gate": { "$ref": "common.schema.json#/$defs/identifier" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "enum": ["accepted", "rejected"] } } },
+      "then": { "required": ["receipt", "current_attempt"] },
+      "else": { "not": { "required": ["receipt"] } }
+    },
+    {
+      "if": { "properties": { "status": { "enum": ["running", "failed", "gated"] } } },
+      "then": { "required": ["current_attempt"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "gated" } } },
+      "then": { "required": ["waiting_on_gate"] },
+      "else": { "not": { "required": ["waiting_on_gate"] } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "open" } } },
+      "else": { "not": { "required": ["blocked_reason"] } }
+    }
+  ]
+}

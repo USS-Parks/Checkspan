@@ -1,0 +1,31 @@
+{
+  "record": "gate_packet",
+  "schema_version": 1,
+  "id": "gate-x",
+  "run_id": "run-0001",
+  "node": {
+    "graph_id": "review_pilot",
+    "node_id": "cs_ci",
+    "revision": 2
+  },
+  "purpose": "approve_work",
+  "context_refs": [
+    {
+      "kind": "attempt",
+      "id": "run-0001/review_pilot/cs_ci@2#3",
+      "digest": "sha256:26047eb9deede321eb1d18664413a165d5234044dd5f9b234681ba9ae49f8e9f"
+    }
+  ],
+  "subject_digest": "sha256:9b3e034e796b993e3dc5ebb7a733c0473cb7e4acb504c930aeba7ceba8ef8670",
+  "requested_decision": {
+    "options": [
+      "retry"
+    ]
+  },
+  "authority_policy_ref": {
+    "id": "operator_decides",
+    "version": 1
+  },
+  "created_at": "2026-09-06T14:06:00Z",
+  "expires_at": "2026-09-07T14:00:00Z"
+}

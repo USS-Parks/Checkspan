@@ -14,6 +14,16 @@ pub enum RecordKind {
     GraphSpec,
     /// One execution of a graph revision.
     GraphRun,
+    /// One attempt of one node within one run.
+    Attempt,
+    /// A verifier's verdict about one exact attempt result.
+    VerifierReceipt,
+    /// A bounded decision request for a human authority.
+    GatePacket,
+    /// An authenticated decision bound to one gate packet.
+    GateDecision,
+    /// Derived, read-only status of one node within one run.
+    NodeView,
 }
 
 impl RecordKind {
@@ -22,6 +32,11 @@ impl RecordKind {
         match self {
             RecordKind::GraphSpec => "graph_spec",
             RecordKind::GraphRun => "graph_run",
+            RecordKind::Attempt => "attempt",
+            RecordKind::VerifierReceipt => "verifier_receipt",
+            RecordKind::GatePacket => "gate_packet",
+            RecordKind::GateDecision => "gate_decision",
+            RecordKind::NodeView => "node_view",
         }
     }
 }

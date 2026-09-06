@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://checkspan.invalid/schemas/v1/gate-packet.schema.json",
+  "title": "GatePacket",
+  "description": "A bounded decision request for a human authority: sealed context, the exact subject digest a decision binds to, the decisions offered, who may decide, and when the packet expires. It references sealed context and never waits on the paused node's acceptance.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["record", "schema_version", "id", "run_id", "node", "purpose", "context_refs", "subject_digest", "requested_decision", "authority_policy_ref", "created_at", "expires_at"],
+  "properties": {
+    "record": { "const": "gate_packet" },
+    "schema_version": { "const": 1 },
+    "id": { "$ref": "common.schema.json#/$defs/identifier" },
+    "run_id": { "$ref": "common.schema.json#/$defs/identifier" },
+    "node": { "$ref": "node-ref.schema.json" },
+    "purpose": { "enum": ["resolve_work", "assess_claims", "authorize_action"] },
+    "context_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "id", "digest"],
+        "properties": {
+          "kind": { "enum": ["attempt", "receipt", "artifact", "claim_matrix"] },
+          "id": { "$ref": "common.schema.json#/$defs/text" },
+          "digest": { "$ref": "common.schema.json#/$defs/digest" }
+        }
+      }
+    },
+    "subject_digest": { "$ref": "common.schema.json#/$defs/digest" },
+    "requested_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["options"],
+      "properties": {
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "enum": ["retry", "revise", "cancel", "approve_action", "deny_action", "record_assessment"] }
+        },
+        "action": { "$ref": "#/$defs/action_request" }
+      }
+    },
+    "authority_policy_ref": { "$ref": "common.schema.json#/$defs/policy_ref" },
+    "created_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "expires_at": { "$ref": "common.schema.json#/$defs/timestamp" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "purpose": { "const": "resolve_work" } } },
+      "then": {
+        "properties": {
+          "requested_decision": {
+            "properties": { "options": { "items": { "enum": ["retry", "revise", "cancel"] } } },
+            "not": { "required": ["action"] }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "purpose": { "const": "assess_claims" } } },
+      "then": {
+        "properties": {
+          "requested_decision": {
+            "properties": { "options": { "items": { "const": "record_assessment" } } },
+            "not": { "required": ["action"] }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "purpose": { "const": "authorize_action" } } },
+      "then": {
+        "properties": {
+          "requested_decision": {
+            "required": ["action"],
+            "properties": { "options": { "items": { "enum": ["approve_action", "deny_action"] } } }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "action_request": {
+      "description": "One exact privileged action against one exact target.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "target"],
+      "properties": {
+        "action": { "enum": ["send", "merge", "secret_access", "pay", "delete"] },
+        "target": { "$ref": "common.schema.json#/$defs/text" }
+      }
+    }
+  }
+}

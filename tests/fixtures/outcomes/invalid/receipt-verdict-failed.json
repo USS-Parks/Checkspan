@@ -1,0 +1,37 @@
+{
+  "record": "verifier_receipt",
+  "schema_version": 1,
+  "id": "rcpt-x",
+  "attempt": {
+    "run_id": "run-0001",
+    "node": {
+      "graph_id": "review_pilot",
+      "node_id": "cs_ci",
+      "revision": 2
+    },
+    "number": 1
+  },
+  "subject": "commit:918a8431ec8d46b19029e3ecbbb77e785b25716c",
+  "result_digest": "sha256:eac01717c53e48bf388e22589c0c311fa0ee08f6ad25e7faea65e0bb303ae19e",
+  "context_digest": "sha256:29fb3b7023ff573a527c58216c250cabf303045958f2a0d8db755d1e062452f9",
+  "verifier": {
+    "id": "software_check",
+    "version": 1,
+    "digest": "sha256:74f98a16dbc14bf52a1227c68cdfd5632b9bc20eb89723c736e9e9218bdf1069"
+  },
+  "policy_ref": {
+    "id": "trusted_local",
+    "version": 1
+  },
+  "verdict": "failed",
+  "checked_at": "2026-09-06T14:06:00Z",
+  "validity": {
+    "conditions": [
+      "dependency receipt rcpt-patch-1 remains admissible"
+    ]
+  },
+  "provenance": {
+    "level": "local_controller",
+    "issuer": "checkspan-local-controller"
+  }
+}

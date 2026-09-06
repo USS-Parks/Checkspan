@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://checkspan.invalid/schemas/v1/verifier-receipt.schema.json",
+  "title": "VerifierReceipt",
+  "description": "A verifier's verdict about one exact attempt result. accept, reject, and undecidable are verdicts; a crash or timeout is an execution outcome on the attempt and cannot appear here. The provenance level says how the issuer is authenticated; a digest alone does not.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["record", "schema_version", "id", "attempt", "subject", "result_digest", "context_digest", "verifier", "policy_ref", "verdict", "checked_at", "provenance"],
+  "properties": {
+    "record": { "const": "verifier_receipt" },
+    "schema_version": { "const": 1 },
+    "id": { "$ref": "common.schema.json#/$defs/identifier" },
+    "attempt": { "$ref": "common.schema.json#/$defs/attempt_ref" },
+    "subject": { "$ref": "common.schema.json#/$defs/text" },
+    "result_digest": { "$ref": "common.schema.json#/$defs/digest" },
+    "context_digest": { "$ref": "common.schema.json#/$defs/digest" },
+    "verifier": { "$ref": "common.schema.json#/$defs/verifier_ref" },
+    "policy_ref": { "$ref": "common.schema.json#/$defs/policy_ref" },
+    "verdict": { "enum": ["accept", "reject", "undecidable"] },
+    "reason_code": { "$ref": "common.schema.json#/$defs/identifier" },
+    "reason_text": { "$ref": "common.schema.json#/$defs/text" },
+    "retry_hint": { "$ref": "common.schema.json#/$defs/text" },
+    "checked_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "validity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "valid_until": { "$ref": "common.schema.json#/$defs/timestamp" },
+        "conditions": {
+          "type": "array",
+          "items": { "$ref": "common.schema.json#/$defs/text" }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "issuer"],
+      "properties": {
+        "level": { "$ref": "common.schema.json#/$defs/provenance_level" },
+        "issuer": { "$ref": "common.schema.json#/$defs/text" },
+        "attestation_ref": { "$ref": "common.schema.json#/$defs/text" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "verdict": { "enum": ["reject", "undecidable"] } } },
+      "then": { "required": ["reason_code"] }
+    },
+    {
+      "if": { "properties": { "verdict": { "const": "accept" } } },
+      "then": { "not": { "required": ["retry_hint"] } }
+    }
+  ]
+}

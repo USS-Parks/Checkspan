@@ -1,0 +1,40 @@
+{
+  "record": "attempt",
+  "schema_version": 1,
+  "run_id": "run-0001",
+  "node": {
+    "graph_id": "review_pilot",
+    "node_id": "cs_ci",
+    "revision": 2
+  },
+  "number": 1,
+  "owner": "",
+  "started_at": "2026-09-06T14:00:00Z",
+  "input_manifest": [
+    {
+      "port_name": "check_logs",
+      "locator": "local:verifier/run-0001/cs_ci/1/checks.jsonl",
+      "subject": "commit:918a8431ec8d46b19029e3ecbbb77e785b25716c",
+      "version": "1",
+      "content_digest": "sha256:8c3b4974891cb0893d8d5f1348c7f3ab4b93feddc10dd99f57a64daa91ae07c1",
+      "provenance": {
+        "producer": "checkspan-local-controller"
+      },
+      "policy_ref": {
+        "id": "local_evidence",
+        "version": 1
+      }
+    }
+  ],
+  "dependency_receipts": [
+    {
+      "id": "rcpt-patch-1",
+      "run_id": "run-0001",
+      "node": {
+        "graph_id": "review_pilot",
+        "node_id": "cs_patch",
+        "revision": 1
+      }
+    }
+  ]
+}

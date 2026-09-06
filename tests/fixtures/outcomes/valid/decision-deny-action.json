@@ -1,0 +1,25 @@
+{
+  "record": "gate_decision",
+  "schema_version": 1,
+  "gate_packet_id": "gate-0003",
+  "gate_packet_digest": "sha256:f93a5acadb9275221e40335bc607a08d483979b1fd61ca4392eced39bd284499",
+  "authority": {
+    "identity": "basho",
+    "level": "signed_operator"
+  },
+  "decided_at": "2026-09-06T14:06:00Z",
+  "decision": "deny_action",
+  "scope": {
+    "run_id": "run-0001",
+    "node": {
+      "graph_id": "review_pilot",
+      "node_id": "cs_packet",
+      "revision": 1
+    },
+    "action": {
+      "action": "merge",
+      "target": "refs/heads/main"
+    }
+  },
+  "authorization_ref": "sshsig:checkspan-gate/gate-0003"
+}

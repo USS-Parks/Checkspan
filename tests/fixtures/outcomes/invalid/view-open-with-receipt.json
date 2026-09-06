@@ -1,0 +1,20 @@
+{
+  "record": "node_view",
+  "schema_version": 1,
+  "run_id": "run-0001",
+  "node": {
+    "graph_id": "review_pilot",
+    "node_id": "cs_ci",
+    "revision": 2
+  },
+  "status": "open",
+  "receipt": {
+    "id": "rcpt-ci-1",
+    "run_id": "run-0001",
+    "node": {
+      "graph_id": "review_pilot",
+      "node_id": "cs_ci",
+      "revision": 2
+    }
+  }
+}

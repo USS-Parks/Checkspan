@@ -1,0 +1,36 @@
+{
+  "record": "gate_packet",
+  "schema_version": 1,
+  "id": "gate-0003",
+  "run_id": "run-0001",
+  "node": {
+    "graph_id": "review_pilot",
+    "node_id": "cs_packet",
+    "revision": 1
+  },
+  "purpose": "authorize_action",
+  "context_refs": [
+    {
+      "kind": "artifact",
+      "id": "store:packets/run-0001/cs_packet/1",
+      "digest": "sha256:e10739da023dfe2e098a38f450ca33603ab8ce2967ece33c7429ea7105113111"
+    }
+  ],
+  "subject_digest": "sha256:f93a5acadb9275221e40335bc607a08d483979b1fd61ca4392eced39bd284499",
+  "requested_decision": {
+    "options": [
+      "approve_action",
+      "deny_action"
+    ],
+    "action": {
+      "action": "merge",
+      "target": "refs/heads/main"
+    }
+  },
+  "authority_policy_ref": {
+    "id": "operator_decides",
+    "version": 1
+  },
+  "created_at": "2026-09-06T14:06:00Z",
+  "expires_at": "2026-09-07T14:00:00Z"
+}

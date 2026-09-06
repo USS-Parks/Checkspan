@@ -1,0 +1,21 @@
+{
+  "record": "node_view",
+  "schema_version": 1,
+  "run_id": "run-0001",
+  "node": {
+    "graph_id": "review_pilot",
+    "node_id": "cs_ci",
+    "revision": 2
+  },
+  "status": "rejected",
+  "current_attempt": 2,
+  "receipt": {
+    "id": "rcpt-ci-2",
+    "run_id": "run-0001",
+    "node": {
+      "graph_id": "review_pilot",
+      "node_id": "cs_ci",
+      "revision": 2
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "record": "gate_packet",
+  "schema_version": 1,
+  "id": "gate-0001",
+  "run_id": "run-0001",
+  "node": {
+    "graph_id": "review_pilot",
+    "node_id": "cs_ci",
+    "revision": 2
+  },
+  "purpose": "resolve_work",
+  "context_refs": [
+    {
+      "kind": "attempt",
+      "id": "run-0001/review_pilot/cs_ci@2#3",
+      "digest": "sha256:26047eb9deede321eb1d18664413a165d5234044dd5f9b234681ba9ae49f8e9f"
+    },
+    {
+      "kind": "receipt",
+      "id": "rcpt-ci-3",
+      "digest": "sha256:07a9cf3c93fc1bfd76e36cbc703e1d61de25dade60c9b8d8d4a474b9da18f483"
+    }
+  ],
+  "subject_digest": "sha256:6079582d942c1c26f9d36184fdf506847a2772fbfa5256e6053c730224430d65",
+  "requested_decision": {
+    "options": [
+      "retry",
+      "revise",
+      "cancel"
+    ]
+  },
+  "authority_policy_ref": {
+    "id": "operator_decides",
+    "version": 1
+  },
+  "created_at": "2026-09-06T14:06:00Z",
+  "expires_at": "2026-09-07T14:00:00Z"
+}

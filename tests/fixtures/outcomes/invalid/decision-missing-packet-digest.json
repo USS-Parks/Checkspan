@@ -1,0 +1,20 @@
+{
+  "record": "gate_decision",
+  "schema_version": 1,
+  "gate_packet_id": "gate-0001",
+  "authority": {
+    "identity": "basho",
+    "level": "signed_operator"
+  },
+  "decided_at": "2026-09-06T14:06:00Z",
+  "decision": "retry",
+  "scope": {
+    "run_id": "run-0001",
+    "node": {
+      "graph_id": "review_pilot",
+      "node_id": "cs_ci",
+      "revision": 2
+    }
+  },
+  "authorization_ref": "sshsig:checkspan-gate/gate-0001"
+}

@@ -7,8 +7,8 @@
 - Repository: [USS-Parks/Checkspan](https://github.com/USS-Parks/Checkspan).
 - Implementation authorization: **full STS approved by Basho on 2026-09-06** ("Approved for full STS now"). Execution proceeds sequentially and halts at every explicit stop in PSPR §0.3; the first stop is the M1 boundary after CS-07.
 - Implementation branch: `codex/checkspan-m1`. Per Basho's instruction of 2026-09-06, every completed prompt is committed on that branch, fast-forwarded into `main`, and both refs are pushed.
-- Current prompt: **CS-03 complete; CS-04 next.**
-- Implemented product behavior: `checkspan --help` / `--version`; library-level GraphSpec/GraphRun/NodeRef/NodeSpec/EvidenceRef contracts with bundled schemas, identity checks, and per-node contract checks (no CLI exposure yet).
+- Current prompt: **CS-04 complete; CS-05 next.**
+- Implemented product behavior: `checkspan --help` / `--version`; library-level contracts for graphs, nodes, evidence, attempts, verifier receipts, gate packets, gate decisions, and node views, with bundled schemas and record-level binding checks (no CLI exposure yet).
 
 ## DOC-00 — Name, repository wiring, and review draft
 
@@ -134,4 +134,29 @@ Draft 0.1 parked RAG ingestion, model execution, and parallel workers. Draft 0.2
 **Not claimed:** cross-node type compatibility, cycles, and hidden proof dependencies (CS-06); attempts, receipts, and decisions (CS-04); actual evidence resolution or scope enforcement (CS-16); hosted matrix for this commit (queued on push; recorded at CS-07).
 
 **Acceptance:** CS-03 gate passed locally. Implementation commit SHA is recorded in the CS-04 entry.  
+**Open blockers:** none.
+
+## CS-04 — Define attempts, receipts, and gate decision records
+
+**Date:** 2026-09-06.  
+**Source SHA before work:** abe323dfe93c910d3d175d4dd80f680a4743a947 (CS-03 implementation commit; also `main` after the fast-forward merge).  
+
+**Changed paths:** `schemas/v1/{attempt,verifier-receipt,gate-packet,gate-decision,node-view}.schema.json` (new); `schemas/v1/common.schema.json` (adds `attempt_number`, `attempt_ref`, `receipt_ref`, `provenance_level`, `text`); `src/contracts/{attempt,gate,view}.rs` (new); `src/contracts/{ids,record,registry,mod}.rs`; `tests/outcome_contracts.rs` (new); `tests/fixtures/outcomes/` (28 valid, 67 invalid); this log; the verification ledger; the dependency record.
+
+**Design as implemented:** `Attempt` records run, node, attempt number, owner, timestamps, an optional repair hint, the input manifest and dependency receipts frozen at dispatch, the result and produced evidence, an `execution` record, and the `verifier_receipt` reference once one exists; it has no acceptance field. `execution.outcome` is `completed`, `failed`, `timed_out`, or `cancelled`; `VerifierReceipt.verdict` is `accept`, `reject`, or `undecidable`; the two vocabularies are disjoint and each enum rejects the other's words. A receipt binds an exact `AttemptRef`, subject, result digest, context digest, verifier identity with digest, policy, verdict, reason fields, validity, and a `provenance` with level `local_controller`, `authenticated_upstream`, or `signed_operator`; `reject` and `undecidable` need a `reason_code`, `accept` cannot carry a `retry_hint`. `VerifierReceipt::binds(&Attempt)` requires the exact attempt, completed execution, and an equal result digest. `GatePacket` carries purpose (`resolve_work`, `assess_claims`, `authorize_action`), sealed context references, a `subject_digest`, the offered options (restricted per purpose), the exact action for authorization packets, the authority policy, and an expiry. `GateDecision` binds a packet by id and digest, names the authority and its authentication level, carries a typed decision (`retry`, `revise`, `cancel`, `approve_action`, `deny_action`, `record_assessment`), an assessment payload exactly for `record_assessment`, and a scope that must name the action for action decisions. `GateDecision::binds(&GatePacket)` checks id, digest, offered option, run, node, and action; `authorizes(action)` is true only for `approve_action` on that exact action; `is_denial()` covers `deny_action` and `cancel`. `NodeView` has status `open`, `running`, `accepted`, `rejected`, `failed`, `gated`, or `cancelled`; `accepted` and `rejected` must name the receipt that determined them and the receipt must be about the same node and run; no other status may carry one. All five are self-describing records parsed header-first with bundled Draft 2020-12 schemas that encode the same conditionals.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed |
+| `cargo test --locked` | passed: 42 tests (3 unit, 3 CLI smoke, 14 contract identity, 9 node/evidence, 13 outcome) |
+| `cargo deny check` / `cargo audit` | not rerun; no dependency change since CS-02 |
+
+**Gate evidence (V1/V2):** records cannot express acceptance without receipt bindings (attempt with a receipt but no result, or with failed/timed-out execution, or a receipt about another node or run; view `accepted`/`rejected` without a receipt or attempt, or with a receipt about another node or run; receipt on `open`/`running` views); an authentic denial remains a denial (the `deny_action` fixture is well-formed, binds to its packet, `is_denial()` is true, `authorizes()` is false for the exact action; `approve_action` authorizes only the exact action and target; `cancel` is a denial); a timeout cannot parse as a verdict (`timed_out`, `timeout`, `failed`, `completed` all fail as `verdict`; `reject`/`accept` fail as `execution.outcome`; `verdict`/`outcome` fields on the wrong record reject; the two enums' string sets are disjoint); a decision bound to a changed packet digest, a retargeted action, a packet that did not offer the decision, or another node fails to bind; `record_assessment` requires its payload and other decisions cannot carry one; packets offer only purpose-allowed options and name an action exactly for authorization; a decision record cannot be read as a receipt and no status vocabulary includes `approved`/`proved`. Golden fixtures cover all 4 execution outcomes, 3 verdicts, 3 provenance levels, 3 purposes, 6 decisions, 3 assessment outcomes, and 7 statuses, and the coverage is asserted.
+
+**Not claimed:** any state transition (CS-10); receipt admission against a verifier identity or trust policy (CS-19); signature verification of decisions (CS-22); expiry against a real clock; hosted matrix for this commit (queued on push; recorded at CS-07).
+
+**Acceptance:** CS-04 gate passed locally. Implementation commit SHA is recorded in the CS-05 entry.  
 **Open blockers:** none.

@@ -1,0 +1,31 @@
+{
+  "record": "gate_packet",
+  "schema_version": 1,
+  "id": "gate-0002",
+  "run_id": "run-0001",
+  "node": {
+    "graph_id": "review_pilot",
+    "node_id": "cs_synthesis",
+    "revision": 1
+  },
+  "purpose": "assess_claims",
+  "context_refs": [
+    {
+      "kind": "claim_matrix",
+      "id": "matrix:run-0001/cs_synthesis/1",
+      "digest": "sha256:a58bc6af60ceae1c41a1e10d1dfda835036dad57e06ef564d7235944bbdcc5a7"
+    }
+  ],
+  "subject_digest": "sha256:eeb0f98c6799539ece6cfdd3ba9f1c5ed9bb8782ee4a7072c3e21cf76965ac88",
+  "requested_decision": {
+    "options": [
+      "record_assessment"
+    ]
+  },
+  "authority_policy_ref": {
+    "id": "operator_decides",
+    "version": 1
+  },
+  "created_at": "2026-09-06T14:06:00Z",
+  "expires_at": "2026-09-07T14:00:00Z"
+}

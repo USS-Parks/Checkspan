@@ -6,17 +6,30 @@
 //! body is examined, so a newer document never fails with a misleading shape
 //! error.
 
+pub mod attempt;
 pub mod evidence;
+pub mod gate;
 pub mod graph;
 pub mod ids;
 pub mod node;
 pub mod record;
 pub mod registry;
+pub mod view;
 
+pub use attempt::{
+    Attempt, AttemptError, AttemptRef, Execution, ExecutionOutcome, ProvenanceLevel, ReceiptError,
+    ReceiptProvenance, ReceiptRef, ResultRef, Validity, Verdict, VerifierReceipt,
+};
 pub use evidence::{EvidenceRef, Provenance};
+pub use gate::{
+    ActionKind, ActionRequest, Assessment, AssessmentOutcome, Authority, ContextKind, ContextRef,
+    DecisionKind, DecisionScope, GateDecision, GateError, GatePacket, GatePurpose,
+    RequestedDecision,
+};
 pub use graph::{GraphBudget, GraphRef, GraphRun, GraphSpec, IdentityError, NodeRef};
 pub use ids::{
-    Digest, Exactly, GraphId, Ident, InvalidValue, NodeId, Revision, RunId, Timestamp, Version,
+    AttemptNumber, Digest, Exactly, GraphId, Ident, InvalidValue, NodeId, Revision, RunId,
+    Timestamp, Version,
 };
 pub use node::{
     AcceptanceSpec, Dependency, FailureClass, NodeContractError, NodeKind, NodeSpec, OnExhaustion,
@@ -26,3 +39,4 @@ pub use node::{
 pub use record::{
     ContractError, Record, RecordKind, SchemaVersion, parse_record, parse_record_value,
 };
+pub use view::{NodeStatus, NodeView, ViewError};

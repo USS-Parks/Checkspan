@@ -37,6 +37,11 @@ pub const SCHEMAS: &[BundledSchema] = bundled![
     "evidence-ref.schema.json",
     "graph-spec.schema.json",
     "graph-run.schema.json",
+    "attempt.schema.json",
+    "verifier-receipt.schema.json",
+    "gate-packet.schema.json",
+    "gate-decision.schema.json",
+    "node-view.schema.json",
 ];
 
 /// Record kinds and versions this build can parse, with their schema `$id`.
@@ -50,6 +55,31 @@ pub const SUPPORTED: &[(RecordKind, SchemaVersion, &str)] = &[
         RecordKind::GraphRun,
         SchemaVersion(1),
         "https://checkspan.invalid/schemas/v1/graph-run.schema.json",
+    ),
+    (
+        RecordKind::Attempt,
+        SchemaVersion(1),
+        "https://checkspan.invalid/schemas/v1/attempt.schema.json",
+    ),
+    (
+        RecordKind::VerifierReceipt,
+        SchemaVersion(1),
+        "https://checkspan.invalid/schemas/v1/verifier-receipt.schema.json",
+    ),
+    (
+        RecordKind::GatePacket,
+        SchemaVersion(1),
+        "https://checkspan.invalid/schemas/v1/gate-packet.schema.json",
+    ),
+    (
+        RecordKind::GateDecision,
+        SchemaVersion(1),
+        "https://checkspan.invalid/schemas/v1/gate-decision.schema.json",
+    ),
+    (
+        RecordKind::NodeView,
+        SchemaVersion(1),
+        "https://checkspan.invalid/schemas/v1/node-view.schema.json",
     ),
 ];
 

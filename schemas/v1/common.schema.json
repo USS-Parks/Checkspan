@@ -75,6 +75,43 @@
         "version": { "$ref": "#/$defs/version" },
         "digest": { "$ref": "#/$defs/digest" }
       }
+    },
+    "attempt_number": {
+      "description": "Attempt number of one node within one run, starting at 1. Every started attempt counts.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4294967295
+    },
+    "attempt_ref": {
+      "description": "Exact reference to one attempt.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "node", "number"],
+      "properties": {
+        "run_id": { "$ref": "#/$defs/identifier" },
+        "node": { "$ref": "node-ref.schema.json" },
+        "number": { "$ref": "#/$defs/attempt_number" }
+      }
+    },
+    "receipt_ref": {
+      "description": "Reference to a verifier receipt: its id, the run it was issued in, and the node it is about.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "run_id", "node"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "run_id": { "$ref": "#/$defs/identifier" },
+        "node": { "$ref": "node-ref.schema.json" }
+      }
+    },
+    "provenance_level": {
+      "description": "How strongly a record's issuer is authenticated.",
+      "enum": ["local_controller", "authenticated_upstream", "signed_operator"]
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
     }
   }
 }
