@@ -2,7 +2,7 @@
 
 ## Execution state
 
-- Canonical plan: [CHECKSPAN-PSPR](../PLANNING/CHECKSPAN-PSPR.md), Draft 0.1.
+- Canonical plan: [CHECKSPAN-PSPR](../PLANNING/CHECKSPAN-PSPR.md), Draft 0.2.
 - Product: Checkspan, an independent exploration.
 - Repository: [USS-Parks/Checkspan](https://github.com/USS-Parks/Checkspan).
 - Implementation authorization: **none received**.
@@ -38,3 +38,20 @@ The initial documentation commit 6bc2bb888147123c4053fff0bf4a05bf9354cf1f was pu
 The only retained worktree is the canonical working folder on main, used for this exploration and future approved work. No secondary worktree, build output, dependency tree, or unpublished implementation exists. Temporary drafting payloads remain outside the repository; no deletion was performed.
 
 CS-01 through CS-36 remain not approved and not started. This closeout changes documentation only. Review and explicit STS approval are still required.
+
+## DOC-02 — Correct the omitted multi-agent RAG scope
+
+**Date:** 2026-09-06.  
+**Source commit:** df18707d0ae5cea46d8193b670ec468eedfa2650.  
+**Review trigger:** Basho noted that the PSPR did not mention multi-agent RAG.  
+**Scope:** documentation revision only; no implementation or model/corpus access approval.
+
+Draft 0.1 parked RAG ingestion, model execution, and parallel workers. Draft 0.2 corrects that omission: a proposed combined M3 pilot now includes distinct requirements/implementation retrieval agents, synthesis, challenge, mechanical evidence checking, and explicit human semantic assessment. First-pilot placement is the draft recommendation; no unanswered scope question is treated as approval.
+
+**Changed paths:** PLANNING/CHECKSPAN-PSPR.md; CHECKSPAN-ONE-PAGER.md; CHECKSPAN-SCHEMA-NOTES.md; README.md; docs/CHECKSPAN-DEVLOG.md; docs/CHECKSPAN-VERIFICATION.md.
+
+**Roster:** original CS-01–CS-36 identifiers preserved; CS-R01–CS-R12 inserted after CS-24 and before CS-25, giving 48 prompts and five milestone approval cuts. Added V9–V11 and 12 RAG review cases. Active product/schema papers are v0.3. Historical v0.1 files remain unchanged.
+
+**Document gate:** exact 48-ID sequence and five required fields per prompt; dependency ordering; active-document links and version/scope consistency; Markdown whitespace and historical hashes. Product gates remain not run. This entry's documentation commit is identified by Git history; final publication SHA is reported separately after remote verification.
+
+**Execution state:** all implementation prompts remain unapproved and unstarted. No model runtime, corpus, credential, spend, agent worker, generated build tree, or extra worktree was introduced. Temporary drafting data remains outside the repository; no deletion is authorized or performed.

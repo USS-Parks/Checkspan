@@ -1,7 +1,7 @@
 # Checkspan — Canonical Plan / Sequential Prompt Roster (PSPR)
 
 **Initiative:** Checkspan — work you can verify.  
-**Version:** Draft 0.1 · 2026-09-06  
+**Version:** Draft 0.2 · 2026-09-06  
 **Status:** DRAFT FOR BASHO'S REVIEW. No implementation prompt is approved or started.  
 **Canonical repository:** [USS-Parks/Checkspan](https://github.com/USS-Parks/Checkspan)  
 **Canonical working folder:** `C:\Users\17076\Documents\Codex\Work Graph Project`  
@@ -15,11 +15,13 @@
 
 Checkspan is a new, independent product. It organizes AI-assisted work as a DAG of immutable contracts, candidate artifacts, explicit dependencies, verifier receipts, and human decisions.
 
-The initial user is a developer reviewing an AI-produced patch. The deliverable is a local CLI that can answer: what candidate was checked, which required checks ran, what evidence supports their conclusions, what failed, and what still requires an operator decision.
+The initial user is a developer investigating and reviewing an AI-assisted change. Checkspan must retrieve permitted evidence through distinct agents, produce a cited research brief, check an exact supplied patch, and assemble a packet that exposes uncertainty and pending decisions.
 
-The first workflow is **patch artifact → software check → review packet**. A candidate can be supplied by a person or an existing tool. Building an AI coding agent is not required to prove this product.
+The first complete pilot is **request + approved corpus + supplied patch → multi-agent RAG research + software checks → review packet**. Retrieval-augmented generation (RAG) is part of the proposed M3 pilot, not merely a reserved evidence-port name. Automatic patch generation remains outside this cut.
 
-The roster develops five independently useful cuts. Its final target is a packaged, reproducible pilot for native Windows x64 and Linux x64, with local verification and an optional GitHub evidence adapter. It does not establish production suitability for untrusted multi-tenant execution.
+The roster contains 48 prompts across five independently approvable milestones. Its final target is a packaged, reproducible pilot for native Windows x64 and Linux x64, with real model-backed RAG and software verification. M4 adds GitHub evidence. It does not establish production suitability for untrusted multi-tenant execution.
+
+Draft 0.1 incorrectly narrowed the product to supplied-patch verification and parked multi-agent RAG. This revision corrects that omission for review. The original CS-01–CS-36 identifiers remain stable; CS-R01–CS-R12 execute after CS-24 and before CS-25. No implementation approval is inferred.
 
 ### 0.2 Authority and source of truth
 
@@ -45,7 +47,7 @@ No prior product is a parent, kernel, host, or required integration. Prior proje
 - Stop after each independently approved milestone. Present its exact evidence, remaining blockers, and next milestone before seeking further scope.
 - Do not treat silence, elapsed time, or an agent-generated gate decision as approval.
 
-**Explicit stops:** milestone boundaries; first use of operator signing credentials; private-repository credentials; any changed acceptance obligation or widened evidence scope; merging to `main`; publishing a release; and deletion of branches, worktrees, caches, or local artifacts.
+**Explicit stops:** milestone boundaries; first use of operator signing credentials; private-repository credentials; admitting a new corpus or widening evidence scope; first use of a model endpoint and its data-egress/resource budget; new credential access, paid inference, or model downloads; changed acceptance obligations; merging to `main`; publishing a release; and deletion of branches, worktrees, caches, or local artifacts. A scope already explicitly included in the recorded approval need not be approved again.
 
 Approval to run M4 includes preparing the documented non-sensitive CI fixtures in this repository. Actual fixture branch pushes, draft PR creation where necessary, and live workflow runs must be included in that milestone's recorded authorization before dispatch. No other repository is a test target.
 
@@ -62,7 +64,10 @@ These are concrete draft defaults, not a claim that Basho has already approved t
 | JSON validation | Reuse `jsonschema`; bundle schemas and disable arbitrary remote/file reference fetching | CS-05 proves restricted resolution |
 | Canonical digests | SHA-256 for artifact bytes; a maintained RFC 8785 JCS implementation for JSON envelopes | CS-08 selects and validates implementation |
 | Durable state | SQLite through `rusqlite`, with bundled SQLite; one authoritative local store | CS-09 validates native builds and durability settings |
-| Execution | One worker; explicit argv; trusted, pinned local verifier executable/profile | CS-17 establishes real process behavior |
+| Execution | One controller; one worker through CS-R03; at most two concurrent read-only research workers from CS-R04; exclusive writes and verifier execution | CS-12/CS-17 establish ownership/process behavior; CS-R04 extends the same scheduler |
+| Retrieval | Local, versioned UTF-8 text/Markdown corpus; SQLite FTS5 lexical search; immutable source spans | CS-R02/CS-R03 prove corpus admission and actual retrieval; semantic/hybrid retrieval remains an extension point |
+| Model execution | One approved existing model runtime through a pinned adapter; local endpoint preferred; role-specific contexts and typed outputs | CS-R05 records exact runtime/model identity, egress permission, context limits, and call/token/cost ceilings before use |
+| Agent roles | Two specialist retrieval agents, synthesizer, and challenger, represented as DAG tasks; deterministic checker remains separate | CS-R01 fixes role scopes; CS-R06–CS-R09 implement the handoffs |
 | Operator decisions | Import packet-bound OpenSSH SSHSIG decisions from a registered operator public key; signing occurs outside the worker | CS-22 proves signer compatibility and custody boundary |
 | GitHub evidence | Optional read-only adapter; public repositories first; existing authenticated tooling only after explicit authorization | CS-26 selects and pins adapter transport |
 | Packaging | Native Windows x64 and Linux x64 binaries and checksums | CS-34–CS-35 |
@@ -74,15 +79,15 @@ SQLite is chosen to reuse transactional crash recovery instead of inventing a jo
 
 ### 0.5 Scope, prerequisites, and blockers
 
-**Included:** contract schemas; graph validation; snapshot/digest binding; durable attempts; state transitions; bounded retries; local code/evidence adapters; one software verifier; operator gate packets and signed decisions; typed review packets; optional GitHub check evidence; diagnostics; packaging; native and hosted acceptance.
+**Included:** contract schemas; graph validation; snapshot/digest binding; durable attempts; state transitions; bounded retries; local code/evidence adapters; one software verifier; operator gate packets and signed decisions; admitted text corpora and indexed retrieval; multiple model-backed research agents; bounded read-only concurrency; cited synthesis and challenge reports; mechanical evidence checks and explicit semantic-review status; typed review packets; GitHub check evidence in M4; diagnostics; packaging; native, model, and hosted acceptance.
 
 **Prerequisites to verify in CS-01:** Rust and native build tools; Git; available disk space; executable subprocess support; CI access to this repository; dependency licensing/advisories. Exact installed versions are not assumed.
 
-**Later prerequisites:** a Basho-controlled signing identity for CS-22; an explicitly authorized GitHub fixture lane for CS-31; native Windows and clean Linux pilot environments for CS-35. If these are absent, their live gates remain blocked. Synthetic evidence cannot replace them.
+**Later prerequisites:** a Basho-controlled signing identity for CS-22; an admitted, non-sensitive corpus and an approved real model runtime/budget for CS-R02/CS-R05; an explicitly authorized GitHub fixture lane for CS-31; native Windows and clean Linux pilot environments for CS-35. The model, corpus, and usage allowance have not been selected by this draft. If prerequisites are absent, their live gates remain blocked. Canned model responses cannot substitute for actual inference.
 
-**Parked:** automatic patch generation; model selection or paid inference; untrusted-code sandboxing; parallel workers; remote agents; multi-user/tenant service; browser UI; RAG ingestion; Indigenous/Nation corpus integration; mathematical theorem proving; compliance certification; vault/credential custody; automated send/merge/pay/delete; cloud hosting; macOS/ARM packaging; public package-registry publication; commercial pricing.
+**Parked:** automatic patch generation; training/fine-tuning; embedding/vector infrastructure unless retrieval evaluation justifies a separately reviewed extension; arbitrary web crawling, PDF/OCR and continuous ingestion; untrusted-code sandboxing; distributed/remote agent workers; unbounded agent spawning; multi-user/tenant service; browser UI; Indigenous/Nation corpus integration; mathematical theorem proving; compliance certification; vault/credential custody; automated send/merge/pay/delete; cloud hosting; macOS/ARM packaging; public package-registry publication; commercial pricing. Hosted inference is permitted only within an explicitly approved endpoint, data, credential, and spending scope.
 
-The generic `rag`, `human`, `logs`, `code`, and `proofs` port taxonomy can be represented in schemas. Unsupported retrieval adapters return explicit unsupported/gated outcomes. Representing a port is not implementing or authorizing it. Preserve the existing restriction “no Nation/unattested Indigenous”; no such material is needed for this pilot.
+The `rag`, `human`, `logs`, `code`, and `proofs` ports are typed boundaries. `rag` becomes an implemented corpus/retrieval path in CS-R02/CS-R03; all other unimplemented retrieval adapters return unsupported/gated outcomes. Preserve the existing restriction “no Nation/unattested Indigenous”; unclear classification blocks admission. The pilot uses only explicitly admitted non-sensitive material.
 
 ### 0.6 Trust and claim boundaries
 
@@ -91,12 +96,15 @@ The generic `rag`, `human`, `logs`, `code`, and `proofs` port taxonomy can be re
 - Operator signatures authenticate possession of an approved signing key; they do not independently prove physical human presence. Private signing capability must not be available to the worker. If that separation cannot be demonstrated, the operator-authority gate stays unaccepted.
 - The local execution pilot permits user-trusted candidates and verifier profiles only. An allowlisted subprocess and a scrubbed environment are not a security sandbox. Arbitrary hostile candidate code requires a separately approved isolation design.
 - No product executor can send, merge, access new secrets, pay, or delete. A gate may record or resolve such a request, but v0 cannot perform the external action.
-- Evidence and model text cannot select verifiers, alter policy, write accepted status, or issue operator decisions.
+- Evidence and model text cannot select verifiers, alter policy, write accepted status, or issue operator decisions. Retrieval is brokered under the role's frozen corpus/scope; a retrieved instruction cannot add a tool, endpoint, credential, or source.
+- Multiple agents or repeated citations are not independent corroboration. Deduplicate common source origins and preserve disagreement.
+- Citation existence, exact quotations, permitted provenance, and required-field coverage can be checked mechanically. General claim entailment and relevance are not established by those checks or by an LLM judge. Label semantic assessments as model-proposed, operator-reviewed, disputed, or insufficient; unresolved required semantic judgments route to a human gate.
+- Corpus attestation records permitted origin/use under the named policy; it is not a guarantee that the corpus is factually true. Model/runtime identity may be an observed provider declaration rather than an independently verified weight digest.
 - There is no global “proved” badge. Reports distinguish schema validity, locally observed checks, authenticated upstream evidence, operator decisions, historical integrity, and current admissibility.
 
 ### 0.7 Working discipline
 
-Use the canonical checkout. Before any worktree creation, inventory registered worktrees and disk capacity and record owner, branch, purpose, and retirement condition. Do not create a second checkout for sequential work. This roster calls for no parallel agent lanes.
+Use the canonical checkout. Before any worktree creation, inventory registered worktrees and disk capacity and record owner, branch, purpose, and retirement condition. Do not create a second checkout for sequential work. Implementation remains one sequential task lane. Product-level research-agent concurrency in CS-R04 does not authorize parallel coding sessions or extra worktrees.
 
 One implementation prompt produces one focused commit after its prescribed pre-commit gate passes. No unrelated cleanup or feature bundles. Preserve user-owned files. Do not suppress required tests or turn a failure into a skipped check.
 
@@ -105,6 +113,32 @@ The milestone acceptance prompts are deliberately separate from implementation: 
 Record prompt ID, changed paths, commands, outcomes, evidence paths/IDs, relevant source SHA, commit SHA, remote SHA, and open blockers. Exact own-commit SHA may be indexed in the following documentation closeout commit; never invent a self-referential hash.
 
 At each milestone, report retained worktrees, dirty state, unpublished commits, generated-data size, and retirement blockers. Removal always requires Basho's explicit authorization.
+
+### 0.8 Multi-agent RAG workflow and contract
+
+The default graph is fixed at admission. An operator supplies the research request, required questions, permitted corpus snapshots, supplied patch, and role profiles. There is no free-running manager that can spawn agents or rewrite the graph.
+
+| Participant | Work and typed output | Authority boundary |
+| --- | --- | --- |
+| Controller | Validate request; dispatch ready nodes; enforce scope, ownership, budgets, and receipts | Deterministic coordinator, not an agent judge |
+| Requirements retriever | Model-guided queries over admitted requirements/docs; emits RetrievalFindings | Read-only retrieval within its assigned scope |
+| Implementation retriever | Model-guided queries over admitted code/documentation snapshots; emits RetrievalFindings | Separate context and identity; no checkout writes |
+| Synthesizer | Consume both accepted retrieval artifacts; emit DraftResearch with claim-to-source mappings and missing evidence | Cannot enlarge the source set or treat a proposed finding as a proved fact |
+| Challenger | Examine the sealed draft and retrieve counterevidence within its own declared scope; emit ChallengeReport | Advisory findings; no acceptance authority |
+| Evidence checker | Check exact spans/digests, policy, subject binding, required claims, contradiction disposition, and review status | Issues only its pinned mechanical verdict; semantic uncertainty is explicit |
+| Human gate / packet sink | Record scoped operator assessments where required; assemble CitedResearch and matching patch/check receipts | Human assessments retain human provenance; software tests remain mandatory |
+
+Both retrieval branches may run concurrently after corpus admission. Synthesis waits for both; challenge waits for synthesis; final checking binds the sealed draft and challenge evidence. A retry creates a new attempt; changing a sealed draft requires fresh downstream bindings. The workflow has no debate loop or hidden extra retrieval round.
+
+At dispatch, freeze the corpus snapshot, source/role permissions, retriever/index configuration, model profile, and budgets. Query-specific slices discovered within that declared input are appended to the retrieval trace as produced evidence. Record the exact evidence subset and prompt-template/context digest for each model call. Seal the trace and candidate before checking; never mutate the original input manifest. Source expansion requires a separately approved revision.
+
+Add versioned AgentSpec, CorpusSnapshot, RetrievalTrace, CitationSpan, RetrievalFindings, DraftResearch, ChallengeReport, CitedResearch, and ModelInvocation records at CS-R01. Bind agent/node/attempt IDs, model/adapter identity, corpus/document/chunk versions, original-source span mappings, retriever configuration, query/result digests, usage, and uncertainty. Extend signed operator decisions with a packet-bound semantic-assessment payload; recording a valid assessment does not create a machine-check pass.
+
+Shared memory means accepted typed artifacts and the run ledger. Raw cross-agent chat and mutable scratchpads are not shared authority. Model calls, tool requests, subqueries, and retries consume the same persistent run budget; reservations cover concurrent calls and uncertain usage after a crash.
+
+The combined review packet must bind research to the same request and relevant repository/candidate snapshot as the supplied patch. It labels what is citation-checked, model-assessed, operator-reviewed, and software-verified separately. A factual answer can remain incomplete even when its citations are well formed. A complete packet may faithfully report abstention if its declared target is a completed investigation; a target requiring a supported answer remains gated/incomplete.
+
+SQLite FTS5 provides the proposed lexical retrieval primitive; this is an implementation choice, not a claim of retrieval quality or multi-agent superiority. CS-R11 compares actual multi-agent runs with a single-agent baseline before any benefit claim. [SQLite FTS5](https://www.sqlite.org/fts5.html).
 
 ## 1. Verification gates — defined before the roster
 
@@ -121,10 +155,13 @@ All tests and commands below are **future requirements**, not results from draft
 | V6 — Hosted GitHub evidence | Real GitHub run/check/job IDs, actual tested commit, trusted workflow binding, conclusions, and collected artifact digests; missing/pending/skipped/cancelled/mismatched evidence fails closed |
 | V7 — Portable packet | Exact required target closure; source/result/receipt bindings; provenance level and freshness explicit; altered or partial packets cannot appear complete |
 | V8 — Distribution | Built artifact SHA/checksum, dependency/license/advisory report, clean native install/reproduction, operator instructions, and bounded retained data |
+| V9 — Corpus and retrieval | Actual admitted corpus/index; exact source-span reproduction; known-evidence retrieval; changed/revoked/forbidden corpus rejection; scope and cache separation before any model exposure |
+| V10 — Multi-agent execution | Real role-specific model calls and native workers; two independent retrieval tasks overlap in controller traces; joins wait; actual cancellation/restart/timeout and persistent shared budgets; endpoint and data-egress enforcement |
+| V11 — Research quality and grounding | Held-out questions with recorded reference evidence and rubric; real single-agent/multi-agent comparison; citation integrity, coverage, contradiction/abstention, latency and usage results; model judgments distinguished from operator labels |
 
 V1 applies to code-changing prompts after the crate exists. Docs-only prompts use link/reference/consistency review and the relevant already-produced evidence. Dependency changes also require advisory and license review; no new unresolved critical/high advisory is silently accepted.
 
-Pure reducer tests and protocol fixtures are appropriate for logic. They do not close process isolation, operator authority, credentials, GitHub integration, or native packaging claims. Those require their stated real-system gates.
+Pure reducer tests and protocol fixtures are appropriate for logic. They do not close process isolation, operator authority, credentials, model execution, retrieval-policy enforcement, GitHub integration, or native packaging claims. Those require their stated real-system gates.
 
 Hosted matrix success must be tied to the actual code commit being accepted. “Queued,” “not run,” “local only,” “blocked,” and “passed” are distinct ledger states. A failed or unavailable environment is not a product pass.
 
@@ -134,11 +171,11 @@ Hosted matrix success must be tied to the actual code commit being accepted. “
 | --- | --- | --- | --- |
 | M1 — Contract explorer | CS-01–CS-07 | Offline `validate` and `inspect` CLI; no execution or credentials | V0–V2 + native/hosted contract proof; stop for review |
 | M2 — Durable run ledger | CS-08–CS-14 | Persist, inspect, and recover explicit run state; no production worker execution | V1–V3; stop for review |
-| M3 — Local software pilot | CS-15–CS-25 | Trusted local candidate → actual checks → gate/retry → typed packet | V1–V5 + V7; stop for review |
+| M3 — Multi-agent RAG and software pilot | CS-15–CS-24 → CS-R01–CS-R12 → CS-25 | Admitted corpus → distinct research agents → cited brief; supplied patch → actual checks; one review packet | V1–V5 + V7 + V9–V11; stop for review |
 | M4 — GitHub-backed evidence | CS-26–CS-31 | Review packet bound to actual GitHub CI and exact candidate | V1, V2, V6, V7; stop for review |
-| M5 — Packaged pilot | CS-32–CS-36 | Reproducible native binaries, docs, verification record, release candidate | V0–V8 where applicable; explicit release approval |
+| M5 — Packaged pilot | CS-32–CS-36 | Reproducible native binaries, RAG/model prerequisites, docs, verification record, release candidate | V0–V11 where applicable; explicit release approval |
 
-M1 is the recommended first STS scope. M3 is the first complete local product workflow. M4 adds hosted evidence without pretending local checks are CI. M5 produces a reviewable release candidate; release publication remains a separate decision.
+M1 is the recommended first STS scope. M3 is the first complete product pilot and requires actual multi-agent RAG. CS-15–CS-24 establish reusable software/runtime foundations; finishing them alone does not accept M3. M4 adds hosted evidence without pretending local checks are CI. M5 produces a reviewable release candidate; release publication remains a separate decision.
 
 ## 3. Reuse ledger
 
@@ -151,6 +188,10 @@ M1 is the recommended first STS scope. M3 is the first complete local product wo
 | Existing product source | Extraction | None planned | No predecessor codebase has been inspected or authorized for extraction |
 | Paper contracts | Extension | Turn the reviewed record sketches into versioned schemas | CS-02–CS-04; no hidden claim weakening |
 | Software/GitHub adapters | Implementation at an established seam | The verifier/evidence protocols created in this roster | CS-17, CS-18, CS-26–CS-29 |
+| Corpus index | Reuse | SQLite FTS5 in the existing SQLite dependency | CS-R02/CS-R03 verify build support, limits, ranking, and source-span binding; no separate vector server |
+| Model runtime | Implementation at an established seam | Approved existing inference runtime and pinned adapter through the worker/process boundary | CS-R05; no custom model server or orchestration framework selected |
+| Multi-agent scheduling and artifact handoff | Extension | Existing claims, budgets, evidence broker, gate records, receipts, and packet sink | CS-R04/CS-R10; no second scheduler, memory authority, or work ledger |
+| Research role/grounding contracts | Genuinely new work | Role profiles, corpus admission, citation mapping, challenge and assessment rules | CS-R01–CS-R12; no borrowed framework assumed to enforce policy |
 | Graph admission, reducer, receipt policy, gate routing, packet closure | Genuinely new work | Checkspan-owned modules | Behavior-driven gates below |
 | CI and test tooling | Reuse | Cargo/GitHub Actions and established Rust test utilities | Pin third-party actions; limit permissions; no invented CI framework |
 
@@ -276,7 +317,7 @@ All entries start **NOT STARTED / NOT APPROVED**. Each prompt inherits the gover
 - **Gate:** V1/V3 on the committed code in native Windows/Linux; no accepted state is fabricated after restart; counters and stale-completion rejection persist; hosted matrix passes.
 - **Deliverables:** M2 evidence and recovery instructions. **Stop for M3 approval.**
 
-### Phase C / M3 — Local software pilot
+### Phase C / M3 — Multi-agent RAG and software pilot
 
 #### CS-15 — Capture exact local patch subjects
 
@@ -290,7 +331,7 @@ All entries start **NOT STARTED / NOT APPROVED**. Each prompt inherits the gover
 
 - **Depends on:** CS-15.
 - **Objective:** freeze the actual allowed inputs before a verifier runs.
-- **Work:** code/log/proof reference resolution; canonical path containment and symlink handling; provenance metadata; mandatory-port enforcement; source/size/freshness limits; unsupported RAG retrieval refusal.
+- **Work:** code/log/proof reference resolution; canonical path containment and symlink handling; provenance metadata; mandatory-port enforcement; source/size/freshness limits; explicit unsupported RAG retrieval refusal until CS-R02/CS-R03 implement the admitted adapter.
 - **Gate:** V1/V2/V4; undeclared sources, escaped paths, missing required evidence, invalid attestations, and mismatched digests fail before dispatch; no forbidden corpus data is used.
 - **Deliverables:** `src/evidence/`, `tests/evidence_resolution.rs`.
 
@@ -358,13 +399,113 @@ All entries start **NOT STARTED / NOT APPROVED**. Each prompt inherits the gover
 - **Gate:** V1/V3/V4/V7; retrying a CI/check node cannot mutate an accepted patch; repair creates fresh subject bindings and retains budget/history. All scenario packets state their actual assurance.
 - **Deliverables:** `tests/local_acceptance.rs`, reusable benign sample project and scenario instructions.
 
-#### CS-25 — Accept the local software pilot
+### Phase C continuation / M3 — Multi-agent RAG
 
-- **Depends on:** CS-24.
-- **Objective:** prove a reviewer can reproduce the complete local product workflow.
-- **Work:** run the committed CLI on native Windows and Linux against the benign sample; follow instructions without internal APIs; inspect a pass, a rejection, an operator gate, and a final packet. Reports/docs only.
-- **Gate:** V1–V5/V7; record exact code SHA, tool/profile versions, native outputs, hosted matrix, real operator decision reference, and retained data sizes. Mock-only gate or process evidence is insufficient.
-- **Deliverables:** M3 evidence and operator guide. **Stop for M4 approval.**
+These prompts extend the runtime already established by CS-15–CS-24. The CS-R prefix preserves the original roster IDs. Execute the following sequence before CS-25; none is optional for the revised first complete pilot.
+
+#### CS-R01 — Define agent, retrieval, and research contracts
+
+- **Depends on:** CS-24 and M3 approval covering the revised RAG scope.
+- **Objective:** make multi-agent RAG an explicit typed DAG.
+- **Work:** AgentSpec and per-node role/profile references; CorpusSnapshot, RetrievalTrace, CitationSpan, RetrievalFindings, DraftResearch, ChallengeReport, CitedResearch, ModelInvocation; signed semantic-assessment payloads; fixed two-retriever → synthesis → challenge → checker graph. Specify dispatch manifests versus appended retrieval traces and separate artifact-integrity, citation, semantic, and software claims.
+- **Gate:** V1/V2; missing role/source permissions, hidden handoffs, wrong-run findings, malformed spans, and agent-authored acceptance reject. Valid examples expose uncertainty and operator-assessment provenance. No new node kind or second ledger is required.
+- **Deliverables:** RAG schemas, role profiles, graph examples, contract tests.
+
+#### CS-R02 — Admit versioned local corpora
+
+- **Depends on:** CS-R01 and recorded approval for the exact pilot corpus.
+- **Objective:** index only permitted, attributable source material.
+- **Work:** bounded UTF-8 text/Markdown import; corpus/document versions and hashes; original byte spans and normalization mapping; issuer/admission records; source classification and allowed use/egress; immutable snapshot manifests and FTS5 index identity. Reuse existing SQLite and external signing/admission boundaries.
+- **Gate:** V1/V2/V9 using a real non-sensitive corpus and an actual approved admission record; missing/invalid attestation, unclear classification, path escape, oversized input, altered bytes, and revoked sources cannot be admitted or reused. No Nation/unattested Indigenous material is retrieved.
+- **Deliverables:** corpus import/inspect commands, benign corpus fixture, versioned manifests, native admission evidence.
+
+#### CS-R03 — Implement scoped retrieval and citation provenance
+
+- **Depends on:** CS-R02.
+- **Objective:** return reproducible slices from the frozen permitted corpus.
+- **Work:** brokered bounded queries; FTS5 ranking with deterministic tie-breaking; role/source filters before ranking and result exposure; top-k/byte limits; source-origin deduplication; complete query/result trace; exact quote/span references; cache keys including snapshot, role scope, policy, and retriever configuration. Search results remain evidence, never instructions.
+- **Gate:** V1/V9 against the actual index; known source spans reproduce; empty results are explicit; forbidden canary text cannot appear in results, counts, model payloads, cache hits, or diagnostics; changed snapshot/policy invalidates reuse. Verify FTS5 support on both targets.
+- **Deliverables:** retrieval broker, citation resolver, retrieval/provenance tests and native evidence.
+
+#### CS-R04 — Extend scheduling to bounded research concurrency
+
+- **Depends on:** CS-R03.
+- **Objective:** run independent retrieval tasks concurrently without racing authority or budgets.
+- **Work:** extend the existing scheduler to at most two read-only research workers; exclusive write/verifier resources; role ownership and completion fencing; transactional reservations for calls/tokens/deadline/cost where applicable; crash-safe reconciliation of uncertain usage. No dynamic agent spawning or distributed workers.
+- **Gate:** V1/V3/V10 with actual native worker processes; retrieval tasks overlap, synthesis waits for both receipts, conflicting access serializes, and cancellation/restart cannot double-spend a reservation or accept a stale completion. This proves scheduling, not real inference until CS-R05.
+- **Deliverables:** scheduler extension, shared-budget tests, native process traces.
+
+#### CS-R05 — Connect one approved model runtime
+
+- **Depends on:** CS-R04 and explicit runtime, corpus-egress, credential, and usage authorization.
+- **Objective:** execute bounded model calls through a pinned adapter.
+- **Work:** select one existing runtime; record model/version as actually observable, adapter digest, role prompt template, sampling/context settings, endpoint policy, timeout/cancellation behavior, and usage ceilings. Reuse the process boundary; accept only typed model output and brokered retrieval requests. No new model download, provider account, or secret store by default.
+- **Gate:** V1/V4/V10 with actual inference; malformed output, unavailable runtime, context overflow, disallowed endpoint/tool, and exhausted budget fail visibly. Outgoing payloads contain only admitted context; credentials and operator signing capability are unavailable to model-controlled actions. Missing live runtime evidence blocks this prompt.
+- **Deliverables:** pinned model adapter/profile, usage records, runtime runbook, actual invocation evidence.
+
+#### CS-R06 — Implement the two specialist retrieval agents
+
+- **Depends on:** CS-R05.
+- **Objective:** collect complementary findings through distinct model-backed workers.
+- **Work:** requirements and implementation roles with separate IDs, contexts, prompts, and source scopes; bounded model-proposed search queries through the broker; typed findings with exact citations and uncertainty. Accepted artifacts are the only cross-agent handoff; common source origins remain common.
+- **Gate:** V1/V9/V10 using real model calls; each agent retrieves its required known evidence; neither can read the other's undeclared context or widen its sources/tools; shared-source findings are not counted as independent corroboration. Record all queries/calls, including unsuccessful attempts.
+- **Deliverables:** role implementations/profiles, retrieval findings, actual two-agent run evidence.
+
+#### CS-R07 — Produce cited synthesis with explicit gaps
+
+- **Depends on:** CS-R06.
+- **Objective:** assemble the retrieval findings into a reviewable draft.
+- **Work:** synthesize only after both retrieval artifacts are accepted for their limited artifact/provenance claims; claim-to-source matrix; required question coverage; separate quotations, paraphrases, inferences, and missing evidence; exact request/repository/candidate binding. Draft acceptance establishes a well-formed artifact, not factual correctness.
+- **Gate:** V1/V7/V10 with actual synthesis; missing retrieval input blocks dispatch; invented source IDs and subject mismatches reject; duplicate citations do not inflate coverage; unanswerable questions remain visibly unanswerable.
+- **Deliverables:** synthesizer role, DraftResearch artifacts, synthesis evidence.
+
+#### CS-R08 — Add a scoped challenge agent
+
+- **Depends on:** CS-R07.
+- **Objective:** surface conflicting evidence and unsupported claims before final checking.
+- **Work:** a separate challenger context receives the sealed draft and its declared evidence; it can retrieve counterevidence within its approved corpus scope; produces per-claim ChallengeReport entries and source references. It cannot modify the draft, negotiate with the checker, or grant acceptance.
+- **Gate:** V1/V9/V10 on real model calls over seeded contradictory and insufficient-evidence cases; challenge output retains disagreement and source lineage; a challenged draft requires explicit disposition. False negatives remain measured quality failures, never proof that no contradiction exists.
+- **Deliverables:** challenger role/profile, challenge reports, live challenge cases.
+
+#### CS-R09 — Enforce evidence checks and semantic review status
+
+- **Depends on:** CS-R08.
+- **Objective:** accept only the exact evidence claim the checker can establish.
+- **Work:** deterministic checks for source membership, digests/spans, quotation fidelity, mandatory coverage fields, subject equality, allowed provenance, and disposition of required challenges; explicit citation-checked/model-assessed/operator-reviewed/disputed/insufficient states. Required unresolved semantic judgments produce undecidable and a packet-bound human gate; signed assessments remain operator evidence.
+- **Gate:** V1/V2/V5/V9; fabricated citations, altered quotes, omitted conflicts, invalid assessments, and wrong-source answers cannot pass their required claim. Actual signed semantic assessment is validated without bypassing a failed mechanical check or any software test. Agent consensus cannot set accepted status.
+- **Deliverables:** research evidence checker, assessment importer extension, real gate and adversarial citation evidence.
+
+#### CS-R10 — Integrate research into the review packet
+
+- **Depends on:** CS-R09.
+- **Objective:** deliver the combined research and software workflow through the existing CLI.
+- **Work:** extend run/inspect/export/verify and the packet sink; bind CitedResearch to the same request and relevant supplied-patch subject; include agent/model provenance, corpus snapshots, citations, challenges, assessments, and usage. Retries reuse approved scope, preserve budgets, and invalidate downstream bindings when a draft or corpus changes.
+- **Gate:** V1/V3/V7/V9/V10; a real combined run produces the required packet; a missing agent branch, stale corpus, changed candidate, failed software check, or unresolved required assessment prevents completion. An investigation that abstains is labelled accordingly and cannot satisfy a target requiring a supported answer.
+- **Deliverables:** combined CLI example, packet extensions, actual end-to-end research/software evidence.
+
+#### CS-R11 — Evaluate retrieval quality and multi-agent value
+
+- **Depends on:** CS-R10 and authorized evaluation usage budget.
+- **Objective:** measure whether the extra agents produce a useful research result.
+- **Work:** freeze a small held-out set and rubric before collecting outputs: at least 12 questions, including answerable, contradictory, and unanswerable cases; retain reference source spans outside agent context. Compare single-agent and multi-agent runs on the same corpus, model profile, union of permitted source/tool scopes, and maximum run budget. Report retrieval recall/coverage, operator-labelled claim support, contradiction handling, abstention, latency, actual calls/tokens, and cost when known.
+- **Gate:** V9–V11 with actual inference and recorded human labels; every accepted citation resolves; all designated insufficient/conflicting cases are deferred or explicitly qualified; at least 80% of required reference facts for answerable cases are correctly reported and cited. Record failed runs and resource tradeoffs. Missing data or a failed quality floor blocks this gate; no superiority claim follows from agent count or an LLM-only judge.
+- **Deliverables:** versioned evaluation set/rubric, baseline and multi-agent results, scorecard and limitations. Further tuning must preserve the held-out record or introduce a fresh set.
+
+#### CS-R12 — Exercise live RAG failure and authority boundaries
+
+- **Depends on:** CS-R11.
+- **Objective:** prove the actual pipeline fails closed on the declared boundary cases.
+- **Work:** exercise prompt-injection fixtures, source revocation, retrieval outage, model timeout, malformed citation, cancellation during parallel calls, restart with uncertain usage, denied source/endpoint, and late completion through the real corpus/model/worker path. Use only benign canaries and approved runtime/data.
+- **Gate:** V3/V4/V5/V9/V10; no unauthorized source/tool/policy change is admitted, no fabricated acceptance occurs, dependency joins and budgets remain correct, and required undecidable work stays gated. Report exactly what the live cases establish; no sandbox or broad security-audit claim.
+- **Deliverables:** real RAG boundary evidence, failure/recovery instructions, updated verification mapping.
+
+#### CS-25 — Accept the multi-agent RAG and software pilot
+
+- **Depends on:** CS-R12.
+- **Objective:** prove a reviewer can reproduce the first complete product pilot.
+- **Work:** run the committed CLI on native Windows and Linux against the admitted corpus and benign patch; use actual model-backed retrieval, synthesis, challenge, evidence checks, software checks, and operator decisions. Follow CLI-only instructions; inspect pass/reject/abstain/gate/retry paths. Reports/docs only.
+- **Gate:** V1–V5/V7/V9–V11; record exact code SHA, corpus/index/model/adapter identities, real agent calls and controller overlap, per-claim citations, usage, native outputs, hosted matrix, real operator decisions, and retained data sizes. Canned responses, software checks alone, or parser-only evidence cannot accept M3.
+- **Deliverables:** combined M3 evidence, scorecard, and operator guide. **Stop for M4 approval.**
 
 ### Phase D / M4 — GitHub-backed evidence
 
@@ -430,15 +571,15 @@ All entries start **NOT STARTED / NOT APPROVED**. Each prompt inherits the gover
 
 - **Depends on:** CS-32.
 - **Objective:** demonstrate the intended invariants survive combinations of failures.
-- **Work:** property-based and adversarial cases tied to the 15 paper review cases; independent review of the current diff/contracts; fix findings within the relevant original prompt boundaries.
-- **Gate:** V1–V7 as applicable; every case maps to actual evidence or a documented out-of-scope claim; no unresolved defect permits incorrect acceptance, scope widening, replay, or gate bypass. No assertion of a broad security audit from a test matrix alone.
+- **Work:** property-based and adversarial cases tied to the 15 original workflow cases and 12 RAG cases; independent review of the current diff/contracts; fix findings within the relevant original prompt boundaries.
+- **Gate:** V1–V7/V9–V11 as applicable; every case maps to actual evidence or a documented out-of-scope claim; no unresolved defect permits incorrect acceptance, scope widening, replay, or gate bypass. No assertion of a broad security audit from a test matrix alone.
 - **Deliverables:** regression mapping, review findings/dispositions, exact tested SHA.
 
 #### CS-34 — Prepare reproducible pilot packages
 
 - **Depends on:** CS-33.
 - **Objective:** produce distributable Windows/Linux CLI candidates.
-- **Work:** release-mode builds, archive layout, checksums, dependency/license/advisory inventory, supported verifier prerequisites, version/release-note draft, and build provenance. No registry publication or release tag.
+- **Work:** release-mode builds, archive layout, checksums, dependency/license/advisory inventory, supported verifier/model-runtime prerequisites, corpus/index formats, version/release-note draft, and build provenance. No registry publication or release tag.
 - **Gate:** V1/V8; each package contains its intended binary and documentation; checksums verify; core validate/inspect work without a development checkout; declared external verifier tools remain explicit.
 - **Deliverables:** local/CI candidate packages and draft release notes tied to source SHA.
 
@@ -446,8 +587,8 @@ All entries start **NOT STARTED / NOT APPROVED**. Each prompt inherits the gover
 
 - **Depends on:** CS-34.
 - **Objective:** prove the packaged workflow on clean supported environments.
-- **Work:** native Windows and clean Linux installation, contract validation, local sample verification, restart recovery, signed decision import, GitHub packet example, and uninstall/retention instructions. Reports/docs only; no automatic deletion.
-- **Gate:** V4–V8 using the actual candidate artifacts; record binary checksums, code SHA, OS/tool prerequisites, operator actions, results, and any limitations. A headless Linux run does not substitute for native Windows evidence.
+- **Work:** native Windows and clean Linux installation, contract validation, admitted-corpus import, actual multi-agent research, local sample verification, restart recovery, signed assessment/decision import, GitHub packet example, and uninstall/retention instructions. Reports/docs only; no automatic deletion.
+- **Gate:** V4–V11 using the actual candidate artifacts and approved real inference; record binary checksums, code SHA, OS/tool prerequisites, operator actions, results, and any limitations. A headless Linux run does not substitute for native Windows evidence.
 - **Deliverables:** M5 pilot acceptance record and clean-install guide.
 
 #### CS-36 — Present the release decision and close the milestone
@@ -462,7 +603,7 @@ All entries start **NOT STARTED / NOT APPROVED**. Each prompt inherits the gover
 
 The following invariants are not retry knobs: unchanged acceptance obligation; required evidence; no speculative dependent execution; exact subject/receipt binding; no approval-to-machine-pass transition; immutable attempt history; real evidence for live claims; and human ownership of privileged actions.
 
-Draft defaults for review: one worker; three total attempts per node run; finite graph-wide attempt/deadline budgets; public GitHub evidence first; all required targets for completion; offline schema resolution; trusted-local execution only; no external-action executor.
+Draft defaults for review: one controller; one worker until CS-R04, then at most two concurrent read-only research workers with exclusive writes/verifiers; four role-specific agent identities using one approved model profile unless revised; FTS5 text retrieval; three total attempts per node run; finite graph-wide attempt/deadline and model-call/token/cost budgets; public GitHub evidence first; all required targets for completion; offline schema resolution; trusted-local execution only; no external-action executor.
 
 Concrete size/time ceilings are measured and pinned in the relevant implementation prompt. Increasing them within a previously approved resource envelope may be a configuration change; widening evidence scope, changing acceptance, adding an adapter, or granting authority requires explicit revision/approval.
 
@@ -472,9 +613,9 @@ When an accepted artifact changes, create a new candidate/run binding. When the 
 
 A prompt is complete only when its own gate passes, its focused changes are committed, and the DEVLOG identifies evidence and commit. A milestone additionally requires its acceptance prompt, relevant hosted/native results, a verified remote SHA, and storage/worktree closeout.
 
-The verification ledger must distinguish local/native, hosted, signed operator, parser/fixture, and not-run results. Links to GitHub actions must include real run IDs and source SHAs. Keep shareable metadata and digests in the repository; raw secrets, signing keys, unredacted logs, and private customer artifacts do not belong there.
+The verification ledger must distinguish local/native, hosted, real retrieval, actual model calls, signed operator, human-labelled evaluation, parser/fixture, and not-run results. Links to GitHub actions must include real run IDs and source SHAs. Keep shareable metadata and digests in the repository; raw secrets, signing keys, unredacted logs, and private customer artifacts do not belong there.
 
-The complete planned pilot requires accepted M1–M5, reproducible supported-platform packages, correct pass/reject/gate/retry behavior, exact CI subject binding, usable instructions, and no unacknowledged critical acceptance defect. Deferred features remain explicitly outside that claim.
+The complete planned pilot requires accepted M1–M5, reproducible supported-platform packages, actual multi-agent RAG meeting its recorded quality floor, correct pass/reject/abstain/gate/retry behavior, exact research/candidate/CI subject binding, usable instructions, and no unacknowledged critical acceptance defect. Deferred features remain explicitly outside that claim.
 
 No signing credential, commercial license, release tag, domain registration, or paid service is chosen by this draft. Distribution terms must be settled before public binary publication.
 
@@ -483,15 +624,18 @@ No signing credential, commercial license, release tag, domain registration, or 
 This draft asks Basho to review:
 
 1. Rust + one local SQLite-backed CLI as the initial implementation.
-2. A supplied-candidate software workflow as the first product cut.
+2. Multi-agent RAG plus supplied-candidate software verification as the first complete pilot; automatic patch generation stays parked.
 3. M1 as the first STS authorization boundary.
 4. The trusted-local execution limitation and externally signed operator decision design.
-5. Optional GitHub integration as M4, and packaged pilot/release review as M5.
+5. GitHub integration as separately approved M4, and packaged pilot/release review as M5.
+6. The fixed agent roles, two-reader concurrency cap, lexical retrieval default, corpus admission, real-model budget gate, and stated research-quality floor. Exact corpus/model selection remains pending before those prompts execute.
 
 **Suggested approval after review:** “Run Checkspan M1 STS.”  
-Until that authorization arrives, CS-01–CS-36 remain unstarted.
+Until that authorization arrives, all 48 prompts (CS-01–CS-36 and CS-R01–CS-R12) remain unstarted and unapproved.
 
 ## 8. Revision history
+
+- **Draft 0.2, 2026-09-06:** corrects the omitted multi-agent RAG workflow after Basho's review comment. Adds CS-R01–CS-R12 inside M3, V9–V11, role/corpus/model contracts, real-agent evidence and evaluation, and updates downstream pilot/package acceptance. Preserves all original CS IDs. The first-pilot placement is a draft recommendation pending Basho's review; no execution or model/corpus access is authorized.
 
 - **Draft 0.1, 2026-09-06:** first granular Checkspan PSPR, prepared at Basho's request after naming the independent product and selecting its repository. No implementation authorization is inferred.
 - The current product papers replace earlier product-affiliation framing. Historical drafts remain traceable; no legacy project is reopened.

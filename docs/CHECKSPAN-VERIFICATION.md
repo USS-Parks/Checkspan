@@ -1,6 +1,6 @@
 # Checkspan — verification ledger
 
-**State:** planning only, 2026-09-06. **No implementation, native runtime, hosted CI, operator-signature, or release gate has run.**
+**State:** planning only, 2026-09-06. **No implementation, native runtime, retrieval, model/agent, evaluation, hosted CI, operator-signature, or release gate has run.**
 
 The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approval scope. Document review is not product acceptance.
 
@@ -10,7 +10,7 @@ The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approva
 | --- | --- | --- | --- | --- |
 | M1 Contract explorer | CS-01–CS-07 | Not approved | Not started | Not run |
 | M2 Durable run ledger | CS-08–CS-14 | Not approved | Not started | Not run |
-| M3 Local software pilot | CS-15–CS-25 | Not approved | Not started | Not run |
+| M3 Multi-agent RAG and software pilot | CS-15–CS-24 → CS-R01–CS-R12 → CS-25 | Not approved | Not started | Not run |
 | M4 GitHub-backed evidence | CS-26–CS-31 | Not approved | Not started | Not run |
 | M5 Packaged pilot | CS-32–CS-36 | Not approved | Not started | Not run |
 
@@ -34,11 +34,32 @@ The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approva
 | PC-14 | Smaller retry claim retains the original obligation | CS-03, CS-13, CS-24 | Design only |
 | PC-15 | Partial target closure cannot appear complete | CS-06, CS-23 | Design only |
 
+## RAG-case coverage to implement
+
+| Case | Required behavior | Owning prompts | Evidence now |
+| --- | --- | --- | --- |
+| RC-01 | Block corpus admission and retrieval. | CS-R01–CS-R02 | Design only |
+| RC-02 | Expose no denied content through results, counts, caches, or model context. | CS-R03, CS-R05–CS-R06 | Design only |
+| RC-03 | Require fresh snapshot/trace bindings; revoked evidence cannot unblock fresh work. | CS-R02–CS-R03, CS-R10 | Design only |
+| RC-04 | Reject the mechanical evidence claim. | CS-R01, CS-R03, CS-R09 | Design only |
+| RC-05 | Treat it as data; broker refuses undeclared authority. | CS-R05, CS-R12 | Design only |
+| RC-06 | Keep common-origin lineage; no independent-corroboration claim. | CS-R03, CS-R06–CS-R07 | Design only |
+| RC-07 | Synthesis and the required packet target stay blocked. | CS-R04, CS-R07, CS-R10 | Design only |
+| RC-08 | Preserve reservations/budget history; refuse stale acceptance. | CS-R04, CS-R12 | Design only |
+| RC-09 | Expose dispute/insufficiency; required semantic judgment gates. | CS-R08–CS-R11 | Design only |
+| RC-10 | No acceptance authority; signed assessment cannot bypass mechanical/software failure. | CS-R09 | Design only |
+| RC-11 | Block transmission before dispatch; no sensitive payload logging. | CS-R02, CS-R05, CS-R12 | Design only |
+| RC-12 | Do not claim multi-agent RAG acceptance or a quality benefit. | CS-R05, CS-R11–CS-R12, CS-25 | Design only |
+
+V9 requires actual corpus/index and policy enforcement; V10 requires native worker and actual model-call evidence; V11 requires the frozen evaluation set, real comparison runs, and human labels. Deterministic fixtures remain useful but cannot close those live claims. All CS-R01–CS-R12 entries are not approved and not started.
+
 ## Evidence record requirements
 
-Use project-local `test-evidence/checkspan/CS-XX/` when execution is approved. Record source SHA/tree, actual commands, platform/tool versions, subject/result/context digests, outcome and failure reason, verifier/profile identity, upstream run IDs, and any operator decision reference.
+Use project-local `test-evidence/checkspan/<prompt-id>/` when execution is approved, including CS-R identifiers. Record source SHA/tree, actual commands, platform/tool versions, subject/result/context digests, outcome and failure reason, verifier/profile identity, upstream run IDs, and any operator decision reference.
 
-Use explicit evidence classes: `document_review`, `parser_fixture`, `local_native`, `hosted_ci`, `signed_operator`, and `packaged_native`. Use explicit outcomes: `not_run`, `blocked`, `failed`, `passed`. A link, mock, or queued run is not a pass.
+Record agent/role/attempt identities, actual model/runtime/adapter identity assurance, approved endpoint/egress policy, corpus/index/retriever versions, exact source spans, per-call context/evidence digests, measured calls/tokens/cost and uncertainty, controller overlap, and human-labelled evaluation references for RAG claims.
+
+Use explicit evidence classes: `document_review`, `parser_fixture`, `local_native`, `live_retrieval`, `live_model`, `human_labelled_evaluation`, `hosted_ci`, `signed_operator`, and `packaged_native`. Use explicit outcomes: `not_run`, `blocked`, `failed`, `passed`. A link, mock, or queued run is not a pass.
 
 Retain shareable metadata. Do not commit private signing keys, credentials, private customer content, unredacted logs, or generated build trees. Generated binary artifacts belong in the approved artifact/release channel, with checksums and source bindings in the ledger.
 
