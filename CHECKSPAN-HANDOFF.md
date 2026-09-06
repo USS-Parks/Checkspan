@@ -52,7 +52,7 @@ Tests live in `tests/*.rs` with shared helpers in `tests/common/mod.rs` and fixt
 
 ## Retained storage (removal needs Basho's authorization)
 
-`target/` (about 2.6 GB, ignored) in the canonical checkout; about 333 `checkspan-*` test scratch directories under `C:\Users\17076\AppData\Local\Temp`; the WSL clone and its `target/`; the WSL rustup toolchain. No extra git worktree exists.
+`target/` (about 2.6 GB, ignored) in the canonical checkout; the WSL clone and its `target/`; the WSL rustup toolchain. No extra git worktree exists. The `checkspan-*` test scratch directories under the Windows Temp folder and WSL `/tmp` were removed on Basho's instruction on 2026-09-06; tests recreate them as needed.
 
 ## Memory notes for Claude sessions
 
