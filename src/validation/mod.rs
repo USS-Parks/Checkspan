@@ -60,6 +60,8 @@ pub enum Stage {
     Shape,
     /// A record-level contract rule rejects the document.
     Contract,
+    /// A cross-node graph admission rule rejects the graph.
+    Admission,
 }
 
 impl Stage {
@@ -74,6 +76,7 @@ impl Stage {
             Stage::Schema => "schema",
             Stage::Shape => "shape",
             Stage::Contract => "contract",
+            Stage::Admission => "admission",
         }
     }
 }

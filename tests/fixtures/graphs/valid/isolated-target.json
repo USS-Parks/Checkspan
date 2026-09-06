@@ -1,0 +1,123 @@
+{
+  "record": "graph_spec",
+  "schema_version": 1,
+  "graph_id": "review_pilot",
+  "revision": 1,
+  "nodes": [
+    {
+      "id": "cs_lone",
+      "revision": 1,
+      "kind": "task",
+      "prompt": "Produce a standalone artifact.",
+      "result_type": {
+        "schema_id": "patch_result",
+        "version": 1,
+        "digest": "sha256:966a18f2328d6a7294e79b3d02465552440fbd5298a43af907314e7c48c559b1"
+      },
+      "acceptance": {
+        "claim": "cs_lone satisfies its named checks for the exact candidate.",
+        "required_checks": [
+          "artifact_exists"
+        ],
+        "verifier": {
+          "id": "software_check",
+          "version": 1,
+          "digest": "sha256:74f98a16dbc14bf52a1227c68cdfd5632b9bc20eb89723c736e9e9218bdf1069"
+        },
+        "policy_ref": {
+          "id": "trusted_local",
+          "version": 1
+        }
+      },
+      "authority_policy_ref": {
+        "id": "no_external_actions",
+        "version": 1
+      }
+    },
+    {
+      "id": "cs_side",
+      "revision": 1,
+      "kind": "task",
+      "prompt": "Produce an optional side artifact nobody depends on.",
+      "result_type": {
+        "schema_id": "patch_result",
+        "version": 1,
+        "digest": "sha256:966a18f2328d6a7294e79b3d02465552440fbd5298a43af907314e7c48c559b1"
+      },
+      "acceptance": {
+        "claim": "cs_side satisfies its named checks for the exact candidate.",
+        "required_checks": [
+          "artifact_exists"
+        ],
+        "verifier": {
+          "id": "software_check",
+          "version": 1,
+          "digest": "sha256:74f98a16dbc14bf52a1227c68cdfd5632b9bc20eb89723c736e9e9218bdf1069"
+        },
+        "policy_ref": {
+          "id": "trusted_local",
+          "version": 1
+        }
+      },
+      "authority_policy_ref": {
+        "id": "no_external_actions",
+        "version": 1
+      }
+    },
+    {
+      "id": "cs_down",
+      "revision": 1,
+      "kind": "check",
+      "prompt": "Check the side artifact.",
+      "result_type": {
+        "schema_id": "software_check_result",
+        "version": 1,
+        "digest": "sha256:0becd597a566edc0c39157dcd20e1a9b27aea5eefaa175688a551cee7b0f6866"
+      },
+      "acceptance": {
+        "claim": "cs_down satisfies its named checks for the exact candidate.",
+        "required_checks": [
+          "artifact_exists"
+        ],
+        "verifier": {
+          "id": "software_check",
+          "version": 1,
+          "digest": "sha256:74f98a16dbc14bf52a1227c68cdfd5632b9bc20eb89723c736e9e9218bdf1069"
+        },
+        "policy_ref": {
+          "id": "trusted_local",
+          "version": 1
+        }
+      },
+      "authority_policy_ref": {
+        "id": "no_external_actions",
+        "version": 1
+      },
+      "deps": [
+        {
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_side",
+            "revision": 1
+          },
+          "output_port": "result",
+          "expected_type": {
+            "schema_id": "patch_result",
+            "version": 1,
+            "digest": "sha256:966a18f2328d6a7294e79b3d02465552440fbd5298a43af907314e7c48c559b1"
+          }
+        }
+      ]
+    }
+  ],
+  "targets": [
+    {
+      "graph_id": "review_pilot",
+      "node_id": "cs_lone",
+      "revision": 1
+    }
+  ],
+  "budget": {
+    "total_attempts": 9
+  }
+}

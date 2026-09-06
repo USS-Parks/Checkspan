@@ -9,4 +9,5 @@
 
 pub mod cli;
 pub mod contracts;
+pub mod graph;
 pub mod validation;

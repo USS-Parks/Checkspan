@@ -31,6 +31,8 @@ CS-03, CS-04: no dependency change.
 
 CS-05: `jsonschema` promoted from dev-dependency to runtime dependency (same version and features; lockfile unchanged). Its runtime closure brings `MIT-0` (`borrow-or-share`) and `Zlib` (`foldhash`) into the product graph; both are OSI-approved permissive licenses and are now explicitly allowed in `deny.toml`. A test asserts that no HTTP client, TLS stack, async runtime, or URL-fetching crate appears in `Cargo.lock`.
 
+CS-06: no dependency change. `autoexamples = false` is set because `examples/` holds JSON documents for the CLI rather than Rust example binaries.
+
 Schema `$id`s use `https://checkspan.invalid/schemas/v1/`. `.invalid` is reserved by RFC 2606 and never resolves, which makes the IDs identifiers rather than fetchable locations; the bundled registry is the only source of schema text. Changing the ID base is a schema-version change.
 
 ## Verification tooling

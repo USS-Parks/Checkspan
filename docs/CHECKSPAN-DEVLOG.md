@@ -7,8 +7,8 @@
 - Repository: [USS-Parks/Checkspan](https://github.com/USS-Parks/Checkspan).
 - Implementation authorization: **full STS approved by Basho on 2026-09-06** ("Approved for full STS now"). Execution proceeds sequentially and halts at every explicit stop in PSPR §0.3; the first stop is the M1 boundary after CS-07.
 - Implementation branch: `codex/checkspan-m1`. Per Basho's instruction of 2026-09-06, every completed prompt is committed on that branch, fast-forwarded into `main`, and both refs are pushed.
-- Current prompt: **CS-05 complete; CS-06 next.**
-- Implemented product behavior: `checkspan --help` / `--version`; library-level contracts for graphs, nodes, evidence, attempts, verifier receipts, gate packets, gate decisions, and node views; a bounded offline validation pipeline (`checkspan::validation::validate`) that takes bytes and returns staged, path-bearing diagnostics or a typed record (no CLI exposure yet).
+- Current prompt: **CS-06 complete; CS-07 (M1 acceptance) next.**
+- Implemented product behavior: `checkspan validate <file>` and `checkspan inspect <file>` over any supported record, with graph admission (dependency resolution, port and type compatibility, cycles, hidden proof dependencies, external imports, gate wait chains, target closure, deterministic order) for graph documents; stable JSON output and exit codes; no dispatch, run store, or writes.
 
 ## DOC-00 — Name, repository wiring, and review draft
 
@@ -185,4 +185,29 @@ Draft 0.1 parked RAG ingestion, model execution, and parallel workers. Draft 0.2
 **Not claimed:** CLI exposure (`validate`/`inspect` are CS-06); cross-node graph admission (CS-06); hosted matrix for this commit (queued on push; recorded at CS-07).
 
 **Acceptance:** CS-05 gate passed locally. Implementation commit SHA is recorded in the CS-06 entry.  
+**Open blockers:** none.
+
+## CS-06 — Implement graph admission and read-only commands
+
+**Date:** 2026-09-06.  
+**Source SHA before work:** f7faf4118649054f568aa62922eaf2ad187aaf2f (CS-05 implementation commit; also `main` after the fast-forward merge).  
+
+**Changed paths:** `src/graph/mod.rs` (new); `src/cli.rs` (rewritten: `validate` and `inspect`); `src/lib.rs`; `src/validation/mod.rs` (adds `Stage::Admission`); `Cargo.toml` (`autoexamples = false`); `examples/README.md`, `examples/graphs/{review-pilot,research-pilot}.json`, `examples/records/graph-run.json`, `examples/invalid/*.json` (9); `tests/graph_admission.rs`, `tests/cli_commands.rs` (new); `tests/fixtures/graphs/` (4 valid, 17 invalid); this log; the verification ledger; the dependency record.
+
+**Design as implemented:** `graph::admit(&GraphSpec)` composes the envelope identity rules and every node's contract rules with the cross-node rules: dependencies must name this graph (a foreign graph is an unsupported external import), an existing node, and that node's exact revision; a node cannot depend on itself; the only output port is `result`; a dependency's `expected_type` must equal the producer's `result_type` including digest; a `proofs` port names in-graph sources as `node:<id>`, each of which must be a declared dependency, and any other proof source is an unsupported import; a `human` port on a `human_gate` names the nodes it resolves as `node:<id>`, and a gate joined to a resolved node by an acceptance chain in either direction (or resolving itself) is a gate wait cycle. Cycles are found by Kahn's algorithm with document-order tie-breaking and reported once with a deterministic path. Admission returns every error in document order, or an `AdmittedGraph` with the topological `order`, the `required` closure of the targets, the `optional` remainder, and gate bindings. It reads the graph only. The CLI reads one file (checking size from metadata before reading), runs the validation pipeline, adds admission for graph documents, and prints one JSON object with `command`, `path`, `valid`, `record`, `schema_version`, `schema_id`, and staged, path-bearing `diagnostics`; `inspect` adds a `graph` description or an `identity` summary. Exit codes: 0 valid, 1 rejected, 2 usage, 3 unreadable file. Output keys are sorted, so output is byte-stable across runs.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed |
+| `cargo test --locked` | passed: 83 tests (8 unit, 3 CLI smoke, 9 CLI command, 14 identity, 15 document validation, 12 graph admission, 9 node/evidence, 13 outcome) |
+| `cargo deny check` / `cargo audit` | not rerun; no dependency change since CS-05 |
+
+**Gate evidence (V1/V2):** the chain-with-gate graph admits with order `cs_patch, cs_ci, cs_ci_gate, cs_packet`, required closure `cs_patch, cs_ci, cs_packet`, the gate optional and bound to `cs_ci`; the six-node diamond admits with both branches before the join and everything required; an isolated target admits with the unrelated side nodes reported optional; node revisions independent of the graph revision admit; admission is deterministic (equal results across runs); unresolved, foreign-graph, revision-mismatched, and self dependencies reject with the exact reference; an unknown output port and a mismatched or digest-drifted result type reject; a two-node and a three-node cycle each produce exactly one `Cycle` error with a deterministic path (`cs_patch -> cs_ci -> cs_patch`); hidden, unresolved, and external proof sources reject; a gate that depends on the node it resolves, a node that depends on its gate, a gate that resolves itself, and a gate that resolves an unknown node reject; identity and node-contract errors surface through admission in document order with `/nodes/<i>` paths. Through the binary: the three valid examples exit 0 with empty diagnostics; all nine invalid examples exit 1 with the expected single rejecting stage (`admission`, `duplicate_key`, `header`, `schema`) and a path on every diagnostic; an unreadable file exits 3 with an `io` diagnostic; `inspect` reports order, closure, gates, and per-node deps and checks, or `identity` for a run or receipt; `inspect` on an invalid document exits 1 without a `graph` section; running both commands in a scratch directory creates no files and leaves the input bytes unchanged, and no `.checkspan` directory appears in the repository; output is identical across two runs with empty stderr; no subcommand prints help and exits 2.
+
+**Not claimed:** native Linux behaviour and the hosted matrix for this commit (queued on push; both recorded at CS-07); any dispatch, run store, or state transition (M2).
+
+**Acceptance:** CS-06 gate passed locally. Implementation commit SHA is recorded in the CS-07 entry.  
 **Open blockers:** none.

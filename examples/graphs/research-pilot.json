@@ -1,0 +1,403 @@
+{
+  "record": "graph_spec",
+  "schema_version": 1,
+  "graph_id": "research_pilot",
+  "revision": 1,
+  "nodes": [
+    {
+      "id": "cs_requirements",
+      "revision": 1,
+      "kind": "task",
+      "prompt": "Retrieve requirement evidence for the requested questions from the admitted corpus.",
+      "result_type": {
+        "schema_id": "retrieval_findings",
+        "version": 1,
+        "digest": "sha256:19689424b0fb4abdc08fc3515a6cc2fef142eba65789ee760ab3146094b5349f"
+      },
+      "acceptance": {
+        "claim": "Every finding cites an exact span inside the frozen corpus scope.",
+        "required_checks": [
+          "citations_resolve",
+          "scope_respected"
+        ],
+        "verifier": {
+          "id": "evidence_check",
+          "version": 1,
+          "digest": "sha256:c87391ce31bc4dab996a3ffa2058beb10f42502e7b901c2fc3be9f507b79045b"
+        },
+        "policy_ref": {
+          "id": "trusted_local",
+          "version": 1
+        }
+      },
+      "authority_policy_ref": {
+        "id": "no_external_actions",
+        "version": 1
+      },
+      "evidence_ports": [
+        {
+          "name": "corpus",
+          "kind": "rag",
+          "expected_type": {
+            "schema_id": "retrieval_findings",
+            "version": 1,
+            "digest": "sha256:19689424b0fb4abdc08fc3515a6cc2fef142eba65789ee760ab3146094b5349f"
+          },
+          "required": true,
+          "allowed_source_scope": [
+            "corpus:pilot-docs@3"
+          ],
+          "handling_policy_ref": {
+            "id": "local_evidence",
+            "version": 1
+          }
+        }
+      ],
+      "display_name": "Requirements retrieval",
+      "resource_scope": [
+        {
+          "resource": "model_endpoint",
+          "access": "shared"
+        }
+      ]
+    },
+    {
+      "id": "cs_implementation",
+      "revision": 1,
+      "kind": "task",
+      "prompt": "Retrieve implementation evidence for the requested questions from the admitted code snapshot.",
+      "result_type": {
+        "schema_id": "retrieval_findings",
+        "version": 1,
+        "digest": "sha256:19689424b0fb4abdc08fc3515a6cc2fef142eba65789ee760ab3146094b5349f"
+      },
+      "acceptance": {
+        "claim": "Every finding cites an exact span inside the frozen corpus scope.",
+        "required_checks": [
+          "citations_resolve",
+          "scope_respected"
+        ],
+        "verifier": {
+          "id": "evidence_check",
+          "version": 1,
+          "digest": "sha256:c87391ce31bc4dab996a3ffa2058beb10f42502e7b901c2fc3be9f507b79045b"
+        },
+        "policy_ref": {
+          "id": "trusted_local",
+          "version": 1
+        }
+      },
+      "authority_policy_ref": {
+        "id": "no_external_actions",
+        "version": 1
+      },
+      "evidence_ports": [
+        {
+          "name": "corpus",
+          "kind": "rag",
+          "expected_type": {
+            "schema_id": "retrieval_findings",
+            "version": 1,
+            "digest": "sha256:19689424b0fb4abdc08fc3515a6cc2fef142eba65789ee760ab3146094b5349f"
+          },
+          "required": true,
+          "allowed_source_scope": [
+            "corpus:pilot-code@3"
+          ],
+          "handling_policy_ref": {
+            "id": "local_evidence",
+            "version": 1
+          }
+        }
+      ],
+      "display_name": "Implementation retrieval",
+      "resource_scope": [
+        {
+          "resource": "model_endpoint",
+          "access": "shared"
+        }
+      ]
+    },
+    {
+      "id": "cs_synthesis",
+      "revision": 1,
+      "kind": "task",
+      "prompt": "Assemble both accepted retrieval findings into a cited draft with explicit gaps.",
+      "result_type": {
+        "schema_id": "draft_research",
+        "version": 1,
+        "digest": "sha256:dbae185d979358f2afa81d86dc3d9f94110043053328670ecbe63857590acb34"
+      },
+      "acceptance": {
+        "claim": "A well-formed draft maps every claim to accepted findings; factual correctness is not established.",
+        "required_checks": [
+          "claim_matrix_complete",
+          "sources_in_scope"
+        ],
+        "verifier": {
+          "id": "evidence_check",
+          "version": 1,
+          "digest": "sha256:c87391ce31bc4dab996a3ffa2058beb10f42502e7b901c2fc3be9f507b79045b"
+        },
+        "policy_ref": {
+          "id": "trusted_local",
+          "version": 1
+        }
+      },
+      "authority_policy_ref": {
+        "id": "no_external_actions",
+        "version": 1
+      },
+      "deps": [
+        {
+          "node": {
+            "graph_id": "research_pilot",
+            "node_id": "cs_requirements",
+            "revision": 1
+          },
+          "output_port": "result",
+          "expected_type": {
+            "schema_id": "retrieval_findings",
+            "version": 1,
+            "digest": "sha256:19689424b0fb4abdc08fc3515a6cc2fef142eba65789ee760ab3146094b5349f"
+          }
+        },
+        {
+          "node": {
+            "graph_id": "research_pilot",
+            "node_id": "cs_implementation",
+            "revision": 1
+          },
+          "output_port": "result",
+          "expected_type": {
+            "schema_id": "retrieval_findings",
+            "version": 1,
+            "digest": "sha256:19689424b0fb4abdc08fc3515a6cc2fef142eba65789ee760ab3146094b5349f"
+          }
+        }
+      ],
+      "evidence_ports": [
+        {
+          "name": "findings",
+          "kind": "proofs",
+          "expected_type": {
+            "schema_id": "retrieval_findings",
+            "version": 1,
+            "digest": "sha256:19689424b0fb4abdc08fc3515a6cc2fef142eba65789ee760ab3146094b5349f"
+          },
+          "required": true,
+          "allowed_source_scope": [
+            "node:cs_requirements",
+            "node:cs_implementation"
+          ],
+          "handling_policy_ref": {
+            "id": "local_evidence",
+            "version": 1
+          }
+        }
+      ],
+      "display_name": "Synthesis"
+    },
+    {
+      "id": "cs_challenge",
+      "revision": 1,
+      "kind": "task",
+      "prompt": "Search the admitted corpus for counterevidence to each claim in the sealed draft.",
+      "result_type": {
+        "schema_id": "challenge_report",
+        "version": 1,
+        "digest": "sha256:85ea4c046305993a8f4c756784d8522b55541533cbd437c4b4236f20c49c70e1"
+      },
+      "acceptance": {
+        "claim": "A challenge report is bound to the sealed draft digest.",
+        "required_checks": [
+          "draft_digest_bound",
+          "sources_in_scope"
+        ],
+        "verifier": {
+          "id": "evidence_check",
+          "version": 1,
+          "digest": "sha256:c87391ce31bc4dab996a3ffa2058beb10f42502e7b901c2fc3be9f507b79045b"
+        },
+        "policy_ref": {
+          "id": "trusted_local",
+          "version": 1
+        }
+      },
+      "authority_policy_ref": {
+        "id": "no_external_actions",
+        "version": 1
+      },
+      "deps": [
+        {
+          "node": {
+            "graph_id": "research_pilot",
+            "node_id": "cs_synthesis",
+            "revision": 1
+          },
+          "output_port": "result",
+          "expected_type": {
+            "schema_id": "draft_research",
+            "version": 1,
+            "digest": "sha256:dbae185d979358f2afa81d86dc3d9f94110043053328670ecbe63857590acb34"
+          }
+        }
+      ],
+      "evidence_ports": [
+        {
+          "name": "draft",
+          "kind": "proofs",
+          "expected_type": {
+            "schema_id": "draft_research",
+            "version": 1,
+            "digest": "sha256:dbae185d979358f2afa81d86dc3d9f94110043053328670ecbe63857590acb34"
+          },
+          "required": true,
+          "allowed_source_scope": [
+            "node:cs_synthesis"
+          ],
+          "handling_policy_ref": {
+            "id": "local_evidence",
+            "version": 1
+          }
+        },
+        {
+          "name": "corpus",
+          "kind": "rag",
+          "expected_type": {
+            "schema_id": "retrieval_findings",
+            "version": 1,
+            "digest": "sha256:19689424b0fb4abdc08fc3515a6cc2fef142eba65789ee760ab3146094b5349f"
+          },
+          "required": true,
+          "allowed_source_scope": [
+            "corpus:pilot-docs@3"
+          ],
+          "handling_policy_ref": {
+            "id": "local_evidence",
+            "version": 1
+          }
+        }
+      ],
+      "display_name": "Challenge"
+    },
+    {
+      "id": "cs_evidence_check",
+      "revision": 1,
+      "kind": "check",
+      "prompt": "Check citation membership, spans, digests, required coverage, and challenge disposition.",
+      "result_type": {
+        "schema_id": "cited_research",
+        "version": 1,
+        "digest": "sha256:970180bd693ee002af74552336fe717cdeee51a85e70fdb6e123b9a4d6a6de1f"
+      },
+      "acceptance": {
+        "claim": "Every citation resolves to exact bytes and every required challenge has a disposition.",
+        "required_checks": [
+          "citations_resolve",
+          "quotes_exact",
+          "challenges_dispositioned"
+        ],
+        "verifier": {
+          "id": "research_evidence_check",
+          "version": 1,
+          "digest": "sha256:ff93ef3f8162e76f81090c3821886f5271e942f5154ef4f1210222b75f4cc6be"
+        },
+        "policy_ref": {
+          "id": "trusted_local",
+          "version": 1
+        }
+      },
+      "authority_policy_ref": {
+        "id": "no_external_actions",
+        "version": 1
+      },
+      "deps": [
+        {
+          "node": {
+            "graph_id": "research_pilot",
+            "node_id": "cs_synthesis",
+            "revision": 1
+          },
+          "output_port": "result",
+          "expected_type": {
+            "schema_id": "draft_research",
+            "version": 1,
+            "digest": "sha256:dbae185d979358f2afa81d86dc3d9f94110043053328670ecbe63857590acb34"
+          }
+        },
+        {
+          "node": {
+            "graph_id": "research_pilot",
+            "node_id": "cs_challenge",
+            "revision": 1
+          },
+          "output_port": "result",
+          "expected_type": {
+            "schema_id": "challenge_report",
+            "version": 1,
+            "digest": "sha256:85ea4c046305993a8f4c756784d8522b55541533cbd437c4b4236f20c49c70e1"
+          }
+        }
+      ],
+      "display_name": "Evidence check"
+    },
+    {
+      "id": "cs_packet",
+      "revision": 1,
+      "kind": "sink",
+      "prompt": "Bind the cited research and its evidence receipt into one packet.",
+      "result_type": {
+        "schema_id": "review_packet",
+        "version": 1,
+        "digest": "sha256:2e41a27f43c3fc0a7bd8b72596df97408eb160b88f186f95c8c263889cdffc7d"
+      },
+      "acceptance": {
+        "claim": "A complete packet binds the cited research and its evidence receipt.",
+        "required_checks": [
+          "target_closure"
+        ],
+        "verifier": {
+          "id": "packet_sink",
+          "version": 1,
+          "digest": "sha256:406d70f2aaa89122f12d1c3b54291ab4469961f3fc4aeac757fe621ec05f869a"
+        },
+        "policy_ref": {
+          "id": "trusted_local",
+          "version": 1
+        }
+      },
+      "authority_policy_ref": {
+        "id": "no_external_actions",
+        "version": 1
+      },
+      "deps": [
+        {
+          "node": {
+            "graph_id": "research_pilot",
+            "node_id": "cs_evidence_check",
+            "revision": 1
+          },
+          "output_port": "result",
+          "expected_type": {
+            "schema_id": "cited_research",
+            "version": 1,
+            "digest": "sha256:970180bd693ee002af74552336fe717cdeee51a85e70fdb6e123b9a4d6a6de1f"
+          }
+        }
+      ],
+      "display_name": "Research packet"
+    }
+  ],
+  "targets": [
+    {
+      "graph_id": "research_pilot",
+      "node_id": "cs_packet",
+      "revision": 1
+    }
+  ],
+  "budget": {
+    "total_attempts": 18
+  },
+  "display_name": "Research pilot: two retrievers, synthesis, challenge, check"
+}

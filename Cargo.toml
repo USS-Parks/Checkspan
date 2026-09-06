@@ -6,6 +6,8 @@ rust-version = "1.98"
 description = "Work you can verify: a DAG of immutable contracts, candidate artifacts, verifier receipts, and human decisions."
 repository = "https://github.com/USS-Parks/Checkspan"
 publish = false
+# examples/ holds JSON documents for the CLI, not Rust example binaries.
+autoexamples = false
 
 [lib]
 name = "checkspan"
