@@ -8,7 +8,7 @@ The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approva
 
 | Milestone | Prompts | Authorization | Implementation | Acceptance evidence |
 | --- | --- | --- | --- | --- |
-| M1 Contract explorer | CS-01–CS-07 | Approved (full STS, 2026-09-06) | CS-01, CS-02 complete; local gates passed | CS-01 SHA 0930294: hosted_ci passed (run 34056847082, ubuntu-24.04 + windows-2025); M1 hosted acceptance recorded at CS-07 |
+| M1 Contract explorer | CS-01–CS-07 | Approved (full STS, 2026-09-06) | CS-01–CS-03 complete; local gates passed | CS-01 SHA 0930294: hosted_ci passed (run 34056847082, ubuntu-24.04 + windows-2025); M1 hosted acceptance recorded at CS-07 |
 | M2 Durable run ledger | CS-08–CS-14 | Not approved | Not started | Not run |
 | M3 Multi-agent RAG and software pilot | CS-15–CS-24 → CS-R01–CS-R12 → CS-25 | Not approved | Not started | Not run |
 | M4 GitHub-backed evidence | CS-26–CS-31 | Not approved | Not started | Not run |
@@ -22,8 +22,8 @@ The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approva
 | PC-02 | Required target remains blocked after upstream failure | CS-06, CS-10–CS-12 | Design only |
 | PC-03 | Expired/revoked prerequisite cannot be reused | CS-11, CS-19 | Design only |
 | PC-04 | Changed candidate requires matching fresh check evidence | CS-15, CS-18, CS-29 | Design only |
-| PC-05 | Correct result shape cannot override failed checks | CS-03, CS-18–CS-19 | Design only |
-| PC-06 | Worker cannot weaken mandatory checks during retry | CS-13, CS-18 | Design only |
+| PC-05 | Correct result shape cannot override failed checks | CS-03, CS-18–CS-19 | CS-03: acceptance pins claim, required checks, verifier, and policy; no record or schema property can carry a status or verdict (`tests/node_contracts.rs`, local_native passed). Behavioural enforcement pending CS-18–CS-19. |
+| PC-06 | Worker cannot weaken mandatory checks during retry | CS-13, CS-18 | CS-03: `required_checks` is non-empty and part of the immutable contract; retry-time enforcement pending CS-13/CS-18. |
 | PC-07 | Checker crash/unavailable CI produces operational failure | CS-17, CS-20, CS-26 | Design only |
 | PC-08 | Undecidable creates a gate without an acceptance cycle | CS-06, CS-21 | Design only |
 | PC-09 | Valid denial cannot be interpreted as approval | CS-04, CS-22 | Design only |
@@ -31,7 +31,7 @@ The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approva
 | PC-11 | Shared resource writes serialize | CS-12, CS-17 | Design only |
 | PC-12 | Late completion cannot accept a cancelled/newer attempt | CS-12, CS-19, CS-24 | Design only |
 | PC-13 | In-graph proof inputs cannot hide dependencies | CS-06, CS-11 | Design only |
-| PC-14 | Smaller retry claim retains the original obligation | CS-03, CS-13, CS-24 | Design only |
+| PC-14 | Smaller retry claim retains the original obligation | CS-03, CS-13, CS-24 | CS-03: the obligation lives in the pinned acceptance contract, not in the attempt; retry policy cannot alter it. Runtime enforcement pending CS-13/CS-24. |
 | PC-15 | Partial target closure cannot appear complete | CS-06, CS-23 | Design only |
 
 ## RAG-case coverage to implement

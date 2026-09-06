@@ -1,0 +1,30 @@
+{
+  "id": "cs_sink",
+  "revision": 1,
+  "kind": "sink",
+  "prompt": "Deliver the cs_sink contract.",
+  "result_type": {
+    "schema_id": "review_packet",
+    "version": 1,
+    "digest": "sha256:2e41a27f43c3fc0a7bd8b72596df97408eb160b88f186f95c8c263889cdffc7d"
+  },
+  "acceptance": {
+    "claim": "cs_sink satisfies its named checks for the exact candidate.",
+    "required_checks": [
+      "artifact_exists"
+    ],
+    "verifier": {
+      "id": "software_check",
+      "version": 1,
+      "digest": "sha256:74f98a16dbc14bf52a1227c68cdfd5632b9bc20eb89723c736e9e9218bdf1069"
+    },
+    "policy_ref": {
+      "id": "trusted_local",
+      "version": 1
+    }
+  },
+  "authority_policy_ref": {
+    "id": "no_external_actions",
+    "version": 1
+  }
+}

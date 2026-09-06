@@ -2,13 +2,148 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://checkspan.invalid/schemas/v1/node-spec.schema.json",
   "title": "NodeSpec",
-  "description": "A node's identity inside its graph: the graph-local name and the revision of its contract.",
+  "description": "One immutable node contract: identity, kind, intent, typed dependencies, evidence ports, the pinned acceptance contract, and the policies that bound its attempts. A valid contract is a shape; it never records or implies acceptance. Cross-node rules (type compatibility, cycles, dependencies outside the graph) are enforced by graph admission.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "revision"],
+  "required": ["id", "revision", "kind", "prompt", "result_type", "acceptance", "authority_policy_ref"],
   "properties": {
     "id": { "$ref": "common.schema.json#/$defs/identifier" },
     "revision": { "$ref": "common.schema.json#/$defs/revision" },
-    "display_name": { "$ref": "common.schema.json#/$defs/display_name" }
+    "kind": {
+      "description": "task produces a candidate; check verifies an upstream result; human_gate records an authenticated decision; sink assembles accepted receipts into a packet.",
+      "enum": ["task", "check", "human_gate", "sink"]
+    },
+    "display_name": { "$ref": "common.schema.json#/$defs/display_name" },
+    "prompt": {
+      "description": "The intent given to the worker.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8192
+    },
+    "deps": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/dependency" }
+    },
+    "evidence_ports": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/port" }
+    },
+    "result_type": { "$ref": "common.schema.json#/$defs/type_ref" },
+    "acceptance": { "$ref": "#/$defs/acceptance" },
+    "retry_policy": { "$ref": "#/$defs/retry_policy" },
+    "authority_policy_ref": {
+      "description": "Policy governing which privileged actions the node may request. Declared before dispatch, not only when gated.",
+      "$ref": "common.schema.json#/$defs/policy_ref"
+    },
+    "resource_scope": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/resource_claim" }
+    },
+    "supersedes": { "$ref": "node-ref.schema.json" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "enum": ["check", "sink"] } } },
+      "then": {
+        "required": ["deps"],
+        "properties": { "deps": { "minItems": 1 } }
+      }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "human_gate" } } },
+      "then": {
+        "required": ["evidence_ports"],
+        "properties": {
+          "evidence_ports": {
+            "contains": { "$ref": "#/$defs/human_port" },
+            "minContains": 1,
+            "maxContains": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "evidence_ports": {
+            "not": { "contains": { "$ref": "#/$defs/human_port" } }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "human_port": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": { "kind": { "const": "human" } }
+    },
+    "dependency": {
+      "description": "Typed dependency on another node's output port.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node", "output_port", "expected_type"],
+      "properties": {
+        "node": { "$ref": "node-ref.schema.json" },
+        "output_port": { "$ref": "common.schema.json#/$defs/identifier" },
+        "expected_type": { "$ref": "common.schema.json#/$defs/type_ref" }
+      }
+    },
+    "port": {
+      "description": "Declared evidence input. Declaration does not enforce the source boundary; the resolver does.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "kind", "expected_type", "required", "allowed_source_scope", "handling_policy_ref"],
+      "properties": {
+        "name": { "$ref": "common.schema.json#/$defs/identifier" },
+        "kind": { "enum": ["rag", "human", "logs", "code", "proofs"] },
+        "expected_type": { "$ref": "common.schema.json#/$defs/type_ref" },
+        "required": { "type": "boolean" },
+        "allowed_source_scope": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+        },
+        "handling_policy_ref": { "$ref": "common.schema.json#/$defs/policy_ref" }
+      }
+    },
+    "acceptance": {
+      "description": "The pinned acceptance contract. required_checks can never be dropped by a retry; only the named verifier's receipt can accept the node.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claim", "required_checks", "verifier", "policy_ref"],
+      "properties": {
+        "claim": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "required_checks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "common.schema.json#/$defs/identifier" }
+        },
+        "verifier": { "$ref": "common.schema.json#/$defs/verifier_ref" },
+        "policy_ref": { "$ref": "common.schema.json#/$defs/policy_ref" }
+      }
+    },
+    "retry_policy": {
+      "description": "Bounded retry behaviour. Every started attempt counts, including failures. Absent means: version 1, three attempts, any failure class, gate on exhaustion.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "max_attempts", "allowed_failure_classes", "on_exhaustion"],
+      "properties": {
+        "version": { "const": 1 },
+        "max_attempts": { "type": "integer", "minimum": 1, "maximum": 4294967295 },
+        "allowed_failure_classes": {
+          "type": "array",
+          "items": { "enum": ["rejected", "infrastructure", "timeout"] }
+        },
+        "on_exhaustion": { "enum": ["gate", "cancel"] }
+      }
+    },
+    "resource_claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resource", "access"],
+      "properties": {
+        "resource": { "$ref": "common.schema.json#/$defs/identifier" },
+        "access": { "enum": ["exclusive", "shared"] }
+      }
+    }
   }
 }

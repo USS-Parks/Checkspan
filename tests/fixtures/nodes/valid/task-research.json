@@ -1,0 +1,91 @@
+{
+  "id": "cs_requirements",
+  "revision": 2,
+  "kind": "task",
+  "prompt": "Retrieve requirement evidence for the requested questions from the admitted corpus.",
+  "result_type": {
+    "schema_id": "retrieval_findings",
+    "version": 1,
+    "digest": "sha256:19689424b0fb4abdc08fc3515a6cc2fef142eba65789ee760ab3146094b5349f"
+  },
+  "acceptance": {
+    "claim": "Every finding cites an exact span inside the frozen corpus scope.",
+    "required_checks": [
+      "citations_resolve",
+      "scope_respected"
+    ],
+    "verifier": {
+      "id": "evidence_check",
+      "version": 1,
+      "digest": "sha256:c87391ce31bc4dab996a3ffa2058beb10f42502e7b901c2fc3be9f507b79045b"
+    },
+    "policy_ref": {
+      "id": "trusted_local",
+      "version": 1
+    }
+  },
+  "authority_policy_ref": {
+    "id": "no_external_actions",
+    "version": 1
+  },
+  "evidence_ports": [
+    {
+      "name": "corpus",
+      "kind": "rag",
+      "expected_type": {
+        "schema_id": "retrieval_findings",
+        "version": 1,
+        "digest": "sha256:19689424b0fb4abdc08fc3515a6cc2fef142eba65789ee760ab3146094b5349f"
+      },
+      "required": true,
+      "allowed_source_scope": [
+        "corpus:pilot-docs@3"
+      ],
+      "handling_policy_ref": {
+        "id": "local_evidence",
+        "version": 1
+      }
+    },
+    {
+      "name": "prior",
+      "kind": "proofs",
+      "expected_type": {
+        "schema_id": "retrieval_findings",
+        "version": 1,
+        "digest": "sha256:19689424b0fb4abdc08fc3515a6cc2fef142eba65789ee760ab3146094b5349f"
+      },
+      "required": false,
+      "allowed_source_scope": [
+        "graph:review_pilot"
+      ],
+      "handling_policy_ref": {
+        "id": "local_evidence",
+        "version": 1
+      }
+    }
+  ],
+  "retry_policy": {
+    "version": 1,
+    "max_attempts": 2,
+    "allowed_failure_classes": [
+      "infrastructure",
+      "timeout"
+    ],
+    "on_exhaustion": "cancel"
+  },
+  "resource_scope": [
+    {
+      "resource": "model_endpoint",
+      "access": "shared"
+    },
+    {
+      "resource": "corpus_index",
+      "access": "shared"
+    }
+  ],
+  "supersedes": {
+    "graph_id": "review_pilot",
+    "node_id": "cs_requirements",
+    "revision": 1
+  }
+}

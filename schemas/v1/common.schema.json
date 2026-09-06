@@ -15,6 +15,12 @@
       "minimum": 1,
       "maximum": 4294967295
     },
+    "version": {
+      "description": "Version of a schema, policy, or verifier, starting at 1.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4294967295
+    },
     "schema_version": {
       "description": "Major version of the record schema. Unknown versions are rejected before any other check.",
       "type": "integer",
@@ -32,6 +38,43 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 200
+    },
+    "digest": {
+      "description": "Content digest: 'sha256:' followed by 64 lowercase hex digits. Identifies bytes; does not establish who produced them.",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "policy_ref": {
+      "description": "Reference to a versioned policy.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "version": { "$ref": "#/$defs/version" }
+      }
+    },
+    "type_ref": {
+      "description": "Pinned result schema: name, version, and digest of the schema text.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_id", "version", "digest"],
+      "properties": {
+        "schema_id": { "$ref": "#/$defs/identifier" },
+        "version": { "$ref": "#/$defs/version" },
+        "digest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "verifier_ref": {
+      "description": "Pinned verifier: name, version, and digest of its code or profile.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "version": { "$ref": "#/$defs/version" },
+        "digest": { "$ref": "#/$defs/digest" }
+      }
     }
   }
 }

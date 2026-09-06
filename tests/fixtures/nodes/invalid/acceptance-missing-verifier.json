@@ -1,0 +1,25 @@
+{
+  "id": "cs_task",
+  "revision": 1,
+  "kind": "task",
+  "prompt": "Deliver the cs_task contract.",
+  "result_type": {
+    "schema_id": "patch_result",
+    "version": 1,
+    "digest": "sha256:966a18f2328d6a7294e79b3d02465552440fbd5298a43af907314e7c48c559b1"
+  },
+  "acceptance": {
+    "claim": "cs_task satisfies its named checks for the exact candidate.",
+    "required_checks": [
+      "artifact_exists"
+    ],
+    "policy_ref": {
+      "id": "trusted_local",
+      "version": 1
+    }
+  },
+  "authority_policy_ref": {
+    "id": "no_external_actions",
+    "version": 1
+  }
+}

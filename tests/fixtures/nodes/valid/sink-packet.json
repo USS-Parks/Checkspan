@@ -1,0 +1,59 @@
+{
+  "id": "cs_packet",
+  "revision": 1,
+  "kind": "sink",
+  "prompt": "Bind the patch and its check receipt into one review packet.",
+  "result_type": {
+    "schema_id": "review_packet",
+    "version": 1,
+    "digest": "sha256:2e41a27f43c3fc0a7bd8b72596df97408eb160b88f186f95c8c263889cdffc7d"
+  },
+  "acceptance": {
+    "claim": "A complete packet binds the patch and its required check receipt.",
+    "required_checks": [
+      "target_closure",
+      "subject_equality"
+    ],
+    "verifier": {
+      "id": "packet_sink",
+      "version": 1,
+      "digest": "sha256:406d70f2aaa89122f12d1c3b54291ab4469961f3fc4aeac757fe621ec05f869a"
+    },
+    "policy_ref": {
+      "id": "trusted_local",
+      "version": 1
+    }
+  },
+  "authority_policy_ref": {
+    "id": "no_external_actions",
+    "version": 1
+  },
+  "deps": [
+    {
+      "node": {
+        "graph_id": "review_pilot",
+        "node_id": "cs_patch",
+        "revision": 1
+      },
+      "output_port": "result",
+      "expected_type": {
+        "schema_id": "patch_result",
+        "version": 1,
+        "digest": "sha256:966a18f2328d6a7294e79b3d02465552440fbd5298a43af907314e7c48c559b1"
+      }
+    },
+    {
+      "node": {
+        "graph_id": "review_pilot",
+        "node_id": "cs_ci",
+        "revision": 2
+      },
+      "output_port": "result",
+      "expected_type": {
+        "schema_id": "software_check_result",
+        "version": 1,
+        "digest": "sha256:0becd597a566edc0c39157dcd20e1a9b27aea5eefaa175688a551cee7b0f6866"
+      }
+    }
+  ]
+}

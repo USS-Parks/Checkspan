@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://checkspan.invalid/schemas/v1/evidence-ref.schema.json",
+  "title": "EvidenceRef",
+  "description": "Evidence resolved for one port of one attempt: exact bytes by digest, the subject they describe, who produced them, the policy they were admitted under, and how long they stay admissible. A digest identifies bytes; provenance is a claim about origin; neither asserts truth.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["port_name", "locator", "subject", "version", "content_digest", "provenance", "policy_ref"],
+  "properties": {
+    "port_name": { "$ref": "common.schema.json#/$defs/identifier" },
+    "locator": {
+      "description": "Where the evidence was read from, in the port kind's locator form.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "subject": {
+      "description": "What the evidence is about: a commit, a run, a corpus snapshot.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "version": {
+      "description": "Producer-side version of the evidence.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "content_digest": { "$ref": "common.schema.json#/$defs/digest" },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["producer"],
+      "properties": {
+        "producer": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "attestation_ref": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    },
+    "policy_ref": { "$ref": "common.schema.json#/$defs/policy_ref" },
+    "valid_until": {
+      "description": "Moment after which the evidence is no longer admissible for new work.",
+      "$ref": "common.schema.json#/$defs/timestamp"
+    }
+  }
+}

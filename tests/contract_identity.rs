@@ -3,8 +3,9 @@
 //! versions and missing targets reject, and every bundled schema resolves
 //! offline.
 
+mod common;
+
 use std::collections::HashSet;
-use std::error::Error;
 use std::fs;
 use std::path::Path;
 
@@ -13,44 +14,9 @@ use checkspan::contracts::{
     ContractError, GraphId, GraphRun, GraphSpec, IdentityError, NodeId, NodeRef, Record,
     RecordKind, Revision, RunId, parse_record,
 };
-use jsonschema::{Draft, Retrieve, Uri, Validator};
+use common::{Bundled, fixture, schema_errors, validator_for};
+use jsonschema::Draft;
 use serde_json::Value;
-
-/// Serves `$ref` targets from the bundled registry only.
-struct Bundled;
-
-impl Retrieve for Bundled {
-    fn retrieve(&self, uri: &Uri<String>) -> Result<Value, Box<dyn Error + Send + Sync>> {
-        registry::bundled(uri.as_str())
-            .map(|source| serde_json::from_str(source).expect("bundled schema is JSON"))
-            .ok_or_else(|| format!("schema {uri} is not bundled").into())
-    }
-}
-
-fn validator_for(schema_id: &str) -> Validator {
-    let root: Value = serde_json::from_str(registry::bundled(schema_id).unwrap()).unwrap();
-    jsonschema::options()
-        .with_draft(Draft::Draft202012)
-        .with_retriever(Bundled)
-        .should_validate_formats(true)
-        .build(&root)
-        .expect("bundled schema compiles offline")
-}
-
-fn fixture(name: &str) -> String {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/contracts")
-        .join(name);
-    fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()))
-}
-
-fn schema_errors(schema_id: &str, text: &str) -> Vec<String> {
-    let instance: Value = serde_json::from_str(text).unwrap();
-    validator_for(schema_id)
-        .iter_errors(&instance)
-        .map(|e| format!("{e} at {}", e.instance_path()))
-        .collect()
-}
 
 fn schema_id_of(text: &str) -> &'static str {
     let value: Value = serde_json::from_str(text).unwrap();
@@ -181,7 +147,7 @@ fn same_local_slug_is_a_different_node_across_graphs_and_revisions() {
 
 #[test]
 fn node_ref_resolves_through_the_owning_graph_revision() {
-    let spec: GraphSpec = parse_record(&fixture("valid/graph-spec-full.json")).unwrap();
+    let spec: GraphSpec = parse_record(&fixture("contracts/valid/graph-spec-full.json")).unwrap();
     let ci = NodeId::new("cs_ci").unwrap();
     assert_eq!(
         spec.node_ref(&ci),
@@ -194,13 +160,14 @@ fn node_ref_resolves_through_the_owning_graph_revision() {
 
 #[test]
 fn two_runs_of_one_graph_revision_are_distinct_runs() {
-    let first: GraphRun = parse_record(&fixture("valid/graph-run-minimal.json")).unwrap();
+    let first: GraphRun = parse_record(&fixture("contracts/valid/graph-run-minimal.json")).unwrap();
     let mut second = first.clone();
     second.run_id = RunId::new("run-0009").unwrap();
     assert_eq!(first.graph_ref, second.graph_ref);
     assert_ne!(first.run_id, second.run_id);
     assert_ne!(first, second);
-    let lineage: GraphRun = parse_record(&fixture("valid/graph-run-lineage.json")).unwrap();
+    let lineage: GraphRun =
+        parse_record(&fixture("contracts/valid/graph-run-lineage.json")).unwrap();
     assert_eq!(lineage.budget_lineage_ref, Some(first.run_id.clone()));
     assert_ne!(
         lineage.graph_ref, first.graph_ref,
@@ -210,7 +177,7 @@ fn two_runs_of_one_graph_revision_are_distinct_runs() {
 
 #[test]
 fn display_name_carries_no_identity() {
-    let spec: GraphSpec = parse_record(&fixture("valid/graph-spec-full.json")).unwrap();
+    let spec: GraphSpec = parse_record(&fixture("contracts/valid/graph-spec-full.json")).unwrap();
     let mut renamed = spec.clone();
     renamed.display_name = Some("a completely different label".into());
     renamed.nodes[0].display_name = None;
@@ -222,7 +189,7 @@ fn display_name_carries_no_identity() {
 
 #[test]
 fn unknown_schema_version_is_rejected_before_the_body_is_examined() {
-    let text = fixture("invalid/schema-unknown-version.json");
+    let text = fixture("contracts/invalid/schema-unknown-version.json");
     assert!(!schema_errors(GraphSpec::SCHEMA_ID, &text).is_empty());
     match parse_record::<GraphSpec>(&text) {
         Err(ContractError::UnsupportedVersion {
@@ -240,19 +207,19 @@ fn unknown_schema_version_is_rejected_before_the_body_is_examined() {
 
 #[test]
 fn wrong_unknown_and_missing_record_headers_are_rejected() {
-    match parse_record::<GraphSpec>(&fixture("invalid/schema-wrong-record.json")) {
+    match parse_record::<GraphSpec>(&fixture("contracts/invalid/schema-wrong-record.json")) {
         Err(ContractError::WrongRecord { expected, found }) => {
             assert_eq!(expected, RecordKind::GraphSpec);
             assert_eq!(found, "graph_run");
         }
         other => panic!("expected WrongRecord, got {other:?}"),
     }
-    match parse_record::<GraphSpec>(&fixture("invalid/schema-unknown-record.json")) {
+    match parse_record::<GraphSpec>(&fixture("contracts/invalid/schema-unknown-record.json")) {
         Err(ContractError::WrongRecord { found, .. }) => assert_eq!(found, "graph"),
         other => panic!("expected WrongRecord, got {other:?}"),
     }
     assert!(matches!(
-        parse_record::<GraphSpec>(&fixture("invalid/schema-missing-header.json")),
+        parse_record::<GraphSpec>(&fixture("contracts/invalid/schema-missing-header.json")),
         Err(ContractError::Header(_))
     ));
     assert!(matches!(
@@ -260,9 +227,9 @@ fn wrong_unknown_and_missing_record_headers_are_rejected() {
         Err(ContractError::Json(_))
     ));
     for name in [
-        "invalid/schema-wrong-record.json",
-        "invalid/schema-unknown-record.json",
-        "invalid/schema-missing-header.json",
+        "contracts/invalid/schema-wrong-record.json",
+        "contracts/invalid/schema-unknown-record.json",
+        "contracts/invalid/schema-missing-header.json",
     ] {
         assert!(
             !schema_errors(GraphSpec::SCHEMA_ID, &fixture(name)).is_empty(),
@@ -274,12 +241,15 @@ fn wrong_unknown_and_missing_record_headers_are_rejected() {
 #[test]
 fn shape_violations_fail_both_schema_and_typed_parse() {
     let cases = [
-        ("invalid/schema-missing-targets.json", "targets"),
-        ("invalid/schema-unknown-field.json", "owner"),
-        ("invalid/schema-bad-identifier.json", "graph_id"),
-        ("invalid/schema-revision-zero.json", "revision"),
-        ("invalid/schema-bad-deadline.json", "timestamp"),
-        ("invalid/schema-node-missing-revision.json", "revision"),
+        ("contracts/invalid/schema-missing-targets.json", "targets"),
+        ("contracts/invalid/schema-unknown-field.json", "owner"),
+        ("contracts/invalid/schema-bad-identifier.json", "graph_id"),
+        ("contracts/invalid/schema-revision-zero.json", "revision"),
+        ("contracts/invalid/schema-bad-deadline.json", "timestamp"),
+        (
+            "contracts/invalid/schema-node-missing-revision.json",
+            "revision",
+        ),
     ];
     for (name, needle) in cases {
         let text = fixture(name);
@@ -298,12 +268,12 @@ fn shape_violations_fail_both_schema_and_typed_parse() {
 
 #[test]
 fn missing_or_empty_targets_and_zero_budget_reject() {
-    let text = fixture("invalid/schema-empty-targets.json");
+    let text = fixture("contracts/invalid/schema-empty-targets.json");
     assert!(!schema_errors(GraphSpec::SCHEMA_ID, &text).is_empty());
     let spec: GraphSpec = parse_record(&text).unwrap();
     assert_eq!(spec.check_identity(), vec![IdentityError::NoTargets]);
 
-    let text = fixture("invalid/schema-zero-attempts.json");
+    let text = fixture("contracts/invalid/schema-zero-attempts.json");
     assert!(!schema_errors(GraphSpec::SCHEMA_ID, &text).is_empty());
     let spec: GraphSpec = parse_record(&text).unwrap();
     assert_eq!(
@@ -317,32 +287,35 @@ fn identity_fixtures_pass_the_schema_but_fail_identity_rules() {
     type Expect = fn(&IdentityError) -> bool;
     let cases: [(&str, Expect); 7] = [
         (
-            "invalid/identity-duplicate-node.json",
+            "contracts/invalid/identity-duplicate-node.json",
             |e| matches!(e, IdentityError::DuplicateNodeId(id) if id.as_str() == "cs_packet"),
         ),
         (
-            "invalid/identity-target-unknown.json",
+            "contracts/invalid/identity-target-unknown.json",
             |e| matches!(e, IdentityError::UnknownTarget(t) if t.node_id.as_str() == "cs_missing"),
         ),
         (
-            "invalid/identity-target-foreign-graph.json",
+            "contracts/invalid/identity-target-foreign-graph.json",
             |e| matches!(e, IdentityError::ForeignTarget(t) if t.graph_id.as_str() == "other_graph"),
         ),
-        ("invalid/identity-target-revision-mismatch.json", |e| {
-            matches!(
-                e,
-                IdentityError::TargetRevisionMismatch { target, actual }
-                    if target.revision.get() == 2 && actual.get() == 1
-            )
-        }),
-        ("invalid/identity-duplicate-target.json", |e| {
+        (
+            "contracts/invalid/identity-target-revision-mismatch.json",
+            |e| {
+                matches!(
+                    e,
+                    IdentityError::TargetRevisionMismatch { target, actual }
+                        if target.revision.get() == 2 && actual.get() == 1
+                )
+            },
+        ),
+        ("contracts/invalid/identity-duplicate-target.json", |e| {
             matches!(e, IdentityError::DuplicateTarget(_))
         }),
         (
-            "invalid/identity-supersedes-not-earlier.json",
+            "contracts/invalid/identity-supersedes-not-earlier.json",
             |e| matches!(e, IdentityError::SupersedesNotEarlier(g) if g.revision.get() == 2),
         ),
-        ("invalid/identity-supersedes-foreign.json", |e| {
+        ("contracts/invalid/identity-supersedes-foreign.json", |e| {
             matches!(e, IdentityError::SupersedesForeignGraph(_))
         }),
     ];
@@ -367,7 +340,7 @@ fn identity_fixtures_pass_the_schema_but_fail_identity_rules() {
 
 #[test]
 fn a_run_cannot_be_its_own_budget_lineage() {
-    let text = fixture("invalid/identity-run-self-lineage.json");
+    let text = fixture("contracts/invalid/identity-run-self-lineage.json");
     assert_eq!(
         schema_errors(GraphRun::SCHEMA_ID, &text),
         Vec::<String>::new()

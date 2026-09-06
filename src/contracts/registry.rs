@@ -34,6 +34,7 @@ pub const SCHEMAS: &[BundledSchema] = bundled![
     "node-ref.schema.json",
     "graph-ref.schema.json",
     "node-spec.schema.json",
+    "evidence-ref.schema.json",
     "graph-spec.schema.json",
     "graph-run.schema.json",
 ];

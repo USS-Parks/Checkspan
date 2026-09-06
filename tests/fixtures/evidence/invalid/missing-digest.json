@@ -1,0 +1,15 @@
+{
+  "port_name": "candidate",
+  "locator": "git:C:/work/checkspan#refs/heads/codex/checkspan-m1",
+  "subject": "commit:918a8431ec8d46b19029e3ecbbb77e785b25716c",
+  "version": "918a8431ec8d46b19029e3ecbbb77e785b25716c",
+  "provenance": {
+    "producer": "checkspan-local-controller",
+    "attestation_ref": "receipt:local/0001"
+  },
+  "policy_ref": {
+    "id": "local_evidence",
+    "version": 1
+  },
+  "valid_until": "2026-10-01T00:00:00Z"
+}

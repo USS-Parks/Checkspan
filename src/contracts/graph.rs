@@ -7,6 +7,7 @@ use std::fmt;
 use serde::{Deserialize, Serialize};
 
 use super::ids::{GraphId, NodeId, Revision, RunId, Timestamp};
+use super::node::NodeSpec;
 use super::record::{Record, RecordKind, SchemaVersion};
 
 /// Exact reference to one graph revision.
@@ -38,19 +39,6 @@ impl fmt::Display for NodeRef {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}/{}@{}", self.graph_id, self.node_id, self.revision)
     }
-}
-
-/// A node's identity inside its graph.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct NodeSpec {
-    /// Graph-local name.
-    pub id: NodeId,
-    /// Contract revision.
-    pub revision: Revision,
-    /// Human-facing label; never part of identity.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub display_name: Option<String>,
 }
 
 /// Graph-wide limits.

@@ -1,0 +1,14 @@
+{
+  "port_name": "check_logs",
+  "locator": "github:USS-Parks/Checkspan/actions/runs/34056847082",
+  "subject": "commit:09302940b5ab9612ed2cd3d25738589d0fe9db43",
+  "version": "run-attempt:1",
+  "content_digest": "sha256:507fffbf22626b98b9b598495dd47f546047f922c80340ba8a7f26921a486829",
+  "provenance": {
+    "producer": "github-actions"
+  },
+  "policy_ref": {
+    "id": "local_evidence",
+    "version": 1
+  }
+}

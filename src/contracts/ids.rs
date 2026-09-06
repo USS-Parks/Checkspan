@@ -97,41 +97,136 @@ identifier!(
     "run_id",
     "Identifies one execution of one graph revision."
 );
+identifier!(
+    Ident,
+    "identifier",
+    "General machine identifier: port, check, resource, schema, policy, and verifier names."
+);
 
-/// Monotonic contract revision, starting at 1.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
-#[serde(try_from = "u32")]
-pub struct Revision(u32);
+macro_rules! positive_u32 {
+    ($name:ident, $kind:literal, $doc:literal) => {
+        #[doc = $doc]
+        #[derive(
+            Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize,
+        )]
+        #[serde(try_from = "u32")]
+        pub struct $name(u32);
 
-impl Revision {
-    /// Build a revision; zero is not a revision.
-    pub fn new(value: u32) -> Result<Self, InvalidValue> {
-        if value == 0 {
-            return Err(InvalidValue {
-                kind: "revision",
-                reason: "must be at least 1".into(),
-            });
+        impl $name {
+            /// Build the value; zero is rejected.
+            pub fn new(value: u32) -> Result<Self, InvalidValue> {
+                if value == 0 {
+                    return Err(InvalidValue {
+                        kind: $kind,
+                        reason: "must be at least 1".into(),
+                    });
+                }
+                Ok(Self(value))
+            }
+
+            /// The number.
+            pub fn get(self) -> u32 {
+                self.0
+            }
         }
-        Ok(Self(value))
+
+        impl TryFrom<u32> for $name {
+            type Error = InvalidValue;
+
+            fn try_from(value: u32) -> Result<Self, Self::Error> {
+                Self::new(value)
+            }
+        }
+
+        impl fmt::Display for $name {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(f, "{}", self.0)
+            }
+        }
+    };
+}
+
+positive_u32!(
+    Revision,
+    "revision",
+    "Monotonic contract revision, starting at 1."
+);
+positive_u32!(
+    Version,
+    "version",
+    "Version of a schema, policy, or verifier, starting at 1."
+);
+
+/// Content digest: `sha256:` followed by 64 lowercase hex digits.
+///
+/// A digest identifies bytes. It does not establish who produced them.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(try_from = "String")]
+pub struct Digest(String);
+
+impl Digest {
+    /// Build a digest from its `sha256:<hex>` text form.
+    pub fn new(value: impl Into<String>) -> Result<Self, InvalidValue> {
+        let value = value.into();
+        let hex = value.strip_prefix("sha256:").unwrap_or("");
+        let well_formed = hex.len() == 64
+            && hex
+                .bytes()
+                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b));
+        if well_formed {
+            Ok(Self(value))
+        } else {
+            Err(InvalidValue {
+                kind: "digest",
+                reason: format!("{value:?} is not 'sha256:' followed by 64 lowercase hex digits"),
+            })
+        }
     }
 
-    /// The revision number.
-    pub fn get(self) -> u32 {
-        self.0
+    /// The `sha256:<hex>` text.
+    pub fn as_str(&self) -> &str {
+        &self.0
     }
 }
 
-impl TryFrom<u32> for Revision {
+impl TryFrom<String> for Digest {
     type Error = InvalidValue;
 
-    fn try_from(value: u32) -> Result<Self, Self::Error> {
+    fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::new(value)
     }
 }
 
-impl fmt::Display for Revision {
+impl fmt::Display for Digest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        f.write_str(&self.0)
+    }
+}
+
+/// A field that must carry exactly the integer `V`.
+///
+/// Used for inline policy versions: a document written for a policy version
+/// this build does not understand is rejected while parsing, before any of
+/// its other fields are interpreted.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct Exactly<const V: u32>;
+
+impl<const V: u32> Serialize for Exactly<V> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_u32(V)
+    }
+}
+
+impl<'de, const V: u32> Deserialize<'de> for Exactly<V> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let found = u32::deserialize(deserializer)?;
+        if found == V {
+            Ok(Self)
+        } else {
+            Err(serde::de::Error::custom(format!(
+                "version {found} is not supported; this build supports {V}"
+            )))
+        }
     }
 }
 

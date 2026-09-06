@@ -1,0 +1,40 @@
+{
+  "id": "cs_task",
+  "revision": 1,
+  "kind": "task",
+  "prompt": "Deliver the cs_task contract.",
+  "result_type": {
+    "schema_id": "patch_result",
+    "version": 1,
+    "digest": "sha256:966a18f2328d6a7294e79b3d02465552440fbd5298a43af907314e7c48c559b1"
+  },
+  "acceptance": {
+    "claim": "cs_task satisfies its named checks for the exact candidate.",
+    "required_checks": [
+      "artifact_exists"
+    ],
+    "verifier": {
+      "id": "software_check",
+      "version": 1,
+      "digest": "sha256:74f98a16dbc14bf52a1227c68cdfd5632b9bc20eb89723c736e9e9218bdf1069"
+    },
+    "policy_ref": {
+      "id": "trusted_local",
+      "version": 1
+    }
+  },
+  "authority_policy_ref": {
+    "id": "no_external_actions",
+    "version": 1
+  },
+  "deps": [
+    {
+      "node": {
+        "graph_id": "review_pilot",
+        "node_id": "cs_patch",
+        "revision": 1
+      },
+      "output_port": "result"
+    }
+  ]
+}

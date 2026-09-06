@@ -1,0 +1,51 @@
+{
+  "id": "cs_patch",
+  "revision": 1,
+  "kind": "task",
+  "prompt": "Capture the supplied patch as an exact candidate against the pinned base.",
+  "result_type": {
+    "schema_id": "patch_result",
+    "version": 1,
+    "digest": "sha256:966a18f2328d6a7294e79b3d02465552440fbd5298a43af907314e7c48c559b1"
+  },
+  "acceptance": {
+    "claim": "A typed patch artifact exists against the pinned base.",
+    "required_checks": [
+      "artifact_exists",
+      "base_matches"
+    ],
+    "verifier": {
+      "id": "patch_capture",
+      "version": 1,
+      "digest": "sha256:3d630a6d9b2aca85afb6ec4a82377b4c5dc5a6cbb208e9d4f21d0a4274de9c98"
+    },
+    "policy_ref": {
+      "id": "trusted_local",
+      "version": 1
+    }
+  },
+  "authority_policy_ref": {
+    "id": "no_external_actions",
+    "version": 1
+  },
+  "evidence_ports": [
+    {
+      "name": "candidate",
+      "kind": "code",
+      "expected_type": {
+        "schema_id": "code_ref",
+        "version": 1,
+        "digest": "sha256:8e4d4c88a547c0fdc8e0127c26c01a936277beb03ff7fab33692e698a15d5df6"
+      },
+      "required": true,
+      "allowed_source_scope": [
+        "repo:USS-Parks/Checkspan"
+      ],
+      "handling_policy_ref": {
+        "id": "local_evidence",
+        "version": 1
+      }
+    }
+  ],
+  "display_name": "Supplied patch"
+}

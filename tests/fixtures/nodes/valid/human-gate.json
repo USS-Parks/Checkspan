@@ -1,0 +1,50 @@
+{
+  "id": "cs_gate",
+  "revision": 1,
+  "kind": "human_gate",
+  "prompt": "Decide whether the exhausted cs_ci attempt may be retried with a narrower hint.",
+  "result_type": {
+    "schema_id": "gate_decision",
+    "version": 1,
+    "digest": "sha256:c550a3eaf693e0cce961a2cf85fffa8564939b5a4473a3b4b3b5a659df88f121"
+  },
+  "acceptance": {
+    "claim": "An authentic, well-formed decision bound to the exact packet was recorded.",
+    "required_checks": [
+      "authentic_decision",
+      "packet_bound"
+    ],
+    "verifier": {
+      "id": "gate_decision_import",
+      "version": 1,
+      "digest": "sha256:e3e68364c6903226af5322242b2e689655078070119d61544f4dd9f162a3c572"
+    },
+    "policy_ref": {
+      "id": "trusted_local",
+      "version": 1
+    }
+  },
+  "authority_policy_ref": {
+    "id": "no_external_actions",
+    "version": 1
+  },
+  "evidence_ports": [
+    {
+      "name": "decision",
+      "kind": "human",
+      "expected_type": {
+        "schema_id": "gate_decision",
+        "version": 1,
+        "digest": "sha256:c550a3eaf693e0cce961a2cf85fffa8564939b5a4473a3b4b3b5a659df88f121"
+      },
+      "required": true,
+      "allowed_source_scope": [
+        "signer:basho"
+      ],
+      "handling_policy_ref": {
+        "id": "local_evidence",
+        "version": 1
+      }
+    }
+  ]
+}

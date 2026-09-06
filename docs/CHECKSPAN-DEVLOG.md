@@ -6,9 +6,9 @@
 - Product: Checkspan, an independent exploration.
 - Repository: [USS-Parks/Checkspan](https://github.com/USS-Parks/Checkspan).
 - Implementation authorization: **full STS approved by Basho on 2026-09-06** ("Approved for full STS now"). Execution proceeds sequentially and halts at every explicit stop in PSPR §0.3; the first stop is the M1 boundary after CS-07.
-- Implementation branch: `codex/checkspan-m1`.
-- Current prompt: **CS-02 complete; CS-03 next.**
-- Implemented product behavior: `checkspan --help` / `--version`; library-level GraphSpec/GraphRun/NodeRef contracts with bundled schemas and identity checks (no CLI exposure yet).
+- Implementation branch: `codex/checkspan-m1`. Per Basho's instruction of 2026-09-06, every completed prompt is committed on that branch, fast-forwarded into `main`, and both refs are pushed.
+- Current prompt: **CS-03 complete; CS-04 next.**
+- Implemented product behavior: `checkspan --help` / `--version`; library-level GraphSpec/GraphRun/NodeRef/NodeSpec/EvidenceRef contracts with bundled schemas, identity checks, and per-node contract checks (no CLI exposure yet).
 
 ## DOC-00 — Name, repository wiring, and review draft
 
@@ -109,4 +109,29 @@ Draft 0.1 parked RAG ingestion, model execution, and parallel workers. Draft 0.2
 **Not claimed:** CLI exposure of validation (CS-06), bounded parsing and duplicate-key detection (CS-05), node contract bodies (CS-03), hosted matrix for this commit (queued on push; recorded at CS-07).
 
 **Acceptance:** CS-02 gate passed locally. Implementation commit SHA is recorded in the CS-03 entry.  
+**Open blockers:** none.
+
+## CS-03 — Define immutable node and evidence contracts
+
+**Date:** 2026-09-06.  
+**Source SHA before work:** 918a8431ec8d46b19029e3ecbbb77e785b25716c (CS-02 implementation commit; also `main` after the fast-forward merge Basho requested).  
+
+**Changed paths:** `schemas/v1/common.schema.json` (adds `version`, `digest`, `policy_ref`, `type_ref`, `verifier_ref`); `schemas/v1/node-spec.schema.json` (full contract with kind-conditional rules); `schemas/v1/evidence-ref.schema.json` (new); `src/contracts/ids.rs` (adds `Ident`, `Version`, `Digest`, `Exactly<V>`); `src/contracts/node.rs`, `src/contracts/evidence.rs` (new); `src/contracts/{graph,mod,registry}.rs`; `tests/common/mod.rs` (shared helpers); `tests/node_contracts.rs` (new); `tests/contract_identity.rs`; fixtures regenerated with full node bodies (`contracts/` 4 valid + 20 invalid, `nodes/` 5 valid + 35 invalid, `evidence/` 2 valid + 6 invalid); this log; the verification ledger; the dependency record.
+
+**Design as implemented:** `kind` is one of `task`, `check`, `human_gate`, `sink`. A `check` or `sink` needs at least one dependency; a `human_gate` needs exactly one `human` evidence port and no other kind may declare one. Dependencies name an exact `NodeRef`, an output port, and the expected `TypeRef` (`schema_id`, `version`, `digest`). Evidence ports declare `kind` (`rag`, `human`, `logs`, `code`, `proofs`), `expected_type`, `required`, a non-empty `allowed_source_scope`, and a `handling_policy_ref`; declaration does not enforce the boundary. `acceptance` pins `claim`, a non-empty `required_checks` list, the `verifier` (`id`, `version`, `digest`), and `policy_ref`. `retry_policy` is inline with a fixed format `version` of 1 (the `Exactly<1>` marker rejects any other value while parsing) and defaults to three attempts, all failure classes, gate on exhaustion. `authority_policy_ref` is mandatory on every node so authority is declared before dispatch. `resource_scope` lists `exclusive`/`shared` claims. `supersedes` must name an earlier revision of the same node. `EvidenceRef` binds `port_name`, `locator`, `subject`, `version`, `content_digest`, `provenance` (`producer`, optional `attestation_ref`), `policy_ref`, and optional `valid_until`. No record or schema property can express a status, verdict, or acceptance.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed |
+| `cargo test --locked` | passed: 29 tests (3 unit, 3 CLI smoke, 14 contract identity, 9 node/evidence contract) |
+| `cargo deny check` / `cargo audit` | not rerun; no dependency change since CS-02 |
+
+**Gate evidence (V1/V2):** mandatory checks and inputs cannot disappear (empty or missing `required_checks`, missing `verifier`, an extra `skip_checks` field, missing `result_type`, missing port `required` or `allowed_source_scope`, empty scope, missing `authority_policy_ref` all reject); wrong port/output types reject (unknown node kind, non-identifier port name, missing `expected_type`, unknown port kind, malformed digests on verifier and result type, version 0, unknown resource access); unsupported policy versions reject (`retry_policy.version: 2` fails with "not supported; this build supports 1", zero `max_attempts`, unknown failure class and exhaustion routing, policy ref version 0); kind-conditional rules are enforced by both the schema (`if`/`then`, `contains` with `minContains`/`maxContains`) and the Rust check; rules the schema cannot express (duplicate dependency, port name, resource; `supersedes` on another node or a later revision; whitespace-only prompt) reject in the Rust check on schema-valid documents; every valid node fixture contains no outcome key, the node schema offers none, and a document carrying `status` rejects; retry defaults are explicit after parsing; evidence fixtures round-trip and malformed digest, timestamp, unknown field, and missing provenance reject.
+
+**Not claimed:** cross-node type compatibility, cycles, and hidden proof dependencies (CS-06); attempts, receipts, and decisions (CS-04); actual evidence resolution or scope enforcement (CS-16); hosted matrix for this commit (queued on push; recorded at CS-07).
+
+**Acceptance:** CS-03 gate passed locally. Implementation commit SHA is recorded in the CS-04 entry.  
 **Open blockers:** none.

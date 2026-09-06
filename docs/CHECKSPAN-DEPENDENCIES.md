@@ -27,6 +27,8 @@ Lints: `unsafe_code = "forbid"` package-wide; `missing_docs = "warn"` on the lib
 
 Transitive closure at CS-02: 90 crates (`cargo tree --edges normal,dev`), all MIT, Apache-2.0, Unicode-3.0, or Unlicense-OR-MIT (`cargo deny check licenses`). `cargo audit`: no advisories. No git or non-crates.io sources.
 
+CS-03: no dependency change.
+
 Schema `$id`s use `https://checkspan.invalid/schemas/v1/`. `.invalid` is reserved by RFC 2606 and never resolves, which makes the IDs identifiers rather than fetchable locations; the bundled registry is the only source of schema text. Changing the ID base is a schema-version change.
 
 ## Verification tooling
