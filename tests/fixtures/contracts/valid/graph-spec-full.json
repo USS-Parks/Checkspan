@@ -1,0 +1,37 @@
+{
+  "record": "graph_spec",
+  "schema_version": 1,
+  "graph_id": "review_pilot",
+  "revision": 2,
+  "display_name": "Review pilot (second cut)",
+  "nodes": [
+    {
+      "id": "cs_patch",
+      "revision": 1,
+      "display_name": "Supplied patch"
+    },
+    {
+      "id": "cs_ci",
+      "revision": 2
+    },
+    {
+      "id": "cs_packet",
+      "revision": 1
+    }
+  ],
+  "targets": [
+    {
+      "graph_id": "review_pilot",
+      "node_id": "cs_packet",
+      "revision": 1
+    }
+  ],
+  "budget": {
+    "total_attempts": 9,
+    "deadline": "2026-09-30T00:00:00Z"
+  },
+  "supersedes": {
+    "graph_id": "review_pilot",
+    "revision": 1
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "record": "graph_spec",
+  "schema_version": 1,
+  "graph_id": "review_pilot",
+  "revision": 1,
+  "nodes": [
+    {
+      "id": "cs_packet",
+      "revision": 1
+    }
+  ],
+  "targets": [],
+  "budget": {
+    "total_attempts": 3
+  }
+}

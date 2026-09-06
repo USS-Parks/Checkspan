@@ -21,8 +21,13 @@ Lints: `unsafe_code = "forbid"` package-wide; `missing_docs = "warn"` on the lib
 | Crate | Version | License | Purpose | Alternatives considered | Added in |
 | --- | --- | --- | --- | --- | --- |
 | `clap` (features: `derive`) | 4.6.6 | MIT OR Apache-2.0 | Command-line parsing with generated help/version and stable exit codes | Hand-rolled argument parsing (rejected: help, errors, and exit-code conventions would be re-implemented), `argh`/`lexopt` (smaller, but the PSPR names `clap` and its derive API keeps subcommands declarative) | CS-01 |
+| `serde` (features: `derive`) | 1.0.229 | MIT OR Apache-2.0 | Typed contract records with `deny_unknown_fields` and `try_from` newtypes | Hand-written JSON mapping (rejected: every record would repeat the same strictness code) | CS-02 |
+| `serde_json` | 1.0.151 | MIT OR Apache-2.0 | JSON parsing to `Value` for header-first record dispatch, then typed deserialization | `json` crate (rejected: no serde integration) | CS-02 |
+| `jsonschema` (**dev-dependency**, `default-features = false`) | 0.54.0 | MIT | Draft 2020-12 validation of fixtures against the bundled schemas in tests; no HTTP, file, or TLS resolver is compiled in | `boon` (rejected: smaller ecosystem; `jsonschema` is the PSPR default). Promotion to a runtime dependency is decided by the offline validation prompt. | CS-02 |
 
-Transitive closure at CS-01: 21 crates, all MIT OR Apache-2.0 or Unicode-3.0 (`cargo deny check licenses`). No git or non-crates.io sources.
+Transitive closure at CS-02: 90 crates (`cargo tree --edges normal,dev`), all MIT, Apache-2.0, Unicode-3.0, or Unlicense-OR-MIT (`cargo deny check licenses`). `cargo audit`: no advisories. No git or non-crates.io sources.
+
+Schema `$id`s use `https://checkspan.invalid/schemas/v1/`. `.invalid` is reserved by RFC 2606 and never resolves, which makes the IDs identifiers rather than fetchable locations; the bundled registry is the only source of schema text. Changing the ID base is a schema-version change.
 
 ## Verification tooling
 
@@ -39,4 +44,4 @@ CI (`.github/workflows/ci.yml`) is limited to `contents: read`, uses one third-p
 
 ## Planned additions (not yet decided)
 
-These are the PSPR's proposed defaults for later prompts. Each is chosen, versioned, and reviewed only in the prompt that introduces it: `serde`/`serde_json` (CS-02), `jsonschema` with remote and filesystem `$ref` resolution disabled (CS-05), SHA-256 and RFC 8785 canonicalization (CS-08), `rusqlite` with bundled SQLite (CS-09).
+These are the PSPR's proposed defaults for later prompts. Each is chosen, versioned, and reviewed only in the prompt that introduces it: `jsonschema` as a runtime dependency with bounded parsing (CS-05), SHA-256 and RFC 8785 canonicalization (CS-08), `rusqlite` with bundled SQLite (CS-09).

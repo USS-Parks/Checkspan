@@ -7,8 +7,8 @@
 - Repository: [USS-Parks/Checkspan](https://github.com/USS-Parks/Checkspan).
 - Implementation authorization: **full STS approved by Basho on 2026-09-06** ("Approved for full STS now"). Execution proceeds sequentially and halts at every explicit stop in PSPR §0.3; the first stop is the M1 boundary after CS-07.
 - Implementation branch: `codex/checkspan-m1`.
-- Current prompt: **CS-01 complete; CS-02 next.**
-- Implemented product behavior: `checkspan --help` / `--version` only.
+- Current prompt: **CS-02 complete; CS-03 next.**
+- Implemented product behavior: `checkspan --help` / `--version`; library-level GraphSpec/GraphRun/NodeRef contracts with bundled schemas and identity checks (no CLI exposure yet).
 
 ## DOC-00 — Name, repository wiring, and review draft
 
@@ -83,3 +83,30 @@ Draft 0.1 parked RAG ingestion, model execution, and parallel workers. Draft 0.2
 **Acceptance:** CS-01 gate passed locally. Implementation commit SHA is recorded in the CS-02 entry.  
 **Open blockers:** none.  
 **Storage/worktree:** canonical checkout only; `target/` generated locally and ignored.
+
+## CS-02 — Define identities and graph envelopes
+
+**Date:** 2026-09-06.  
+**Source SHA before work:** 09302940b5ab9612ed2cd3d25738589d0fe9db43 (CS-01 implementation commit, `codex/checkspan-m1`).  
+**CS-01 hosted evidence:** GitHub Actions run 34056847082 on that SHA, `ubuntu-24.04` and `windows-2025`, conclusion success (recorded here as `hosted_ci` for CS-01; M1 hosted acceptance is still CS-07).  
+
+**Changed paths:** `schemas/v1/{common,node-ref,graph-ref,node-spec,graph-spec,graph-run}.schema.json`; `src/contracts/{mod,ids,record,registry,graph}.rs`; `src/lib.rs`; `tests/contract_identity.rs`; `tests/fixtures/contracts/{valid,invalid}/*.json` (4 valid, 20 invalid); `Cargo.toml`, `Cargo.lock`; `docs/CHECKSPAN-DEPENDENCIES.md`; this log; the verification ledger.
+
+**Design as implemented:** every top-level record is self-describing through `record` and `schema_version`; parsing is header-first, so an unsupported version is reported before any shape error. Identifiers share one grammar (`^[a-z0-9][a-z0-9_.-]{0,127}$`); revisions start at 1; display names are optional and never identity. `NodeRef` is `{graph_id, node_id, revision}` and equality covers all three. `GraphSpec` targets are full `NodeRef`s that must resolve to a node in the same graph at its exact revision; `supersedes` must name an earlier revision of the same graph. `GraphRun` binds `run_id` to an exact `GraphRef` and may name an earlier run as `budget_lineage_ref`, never itself. Schema `$id`s live under the reserved `checkspan.invalid` host and are served only by the bundled registry.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed (after one `cargo fmt --all`) |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed (one `type_complexity` finding fixed with a type alias) |
+| `cargo test --locked` | passed: 3 unit (identifier grammar, revision floor, timestamp shape), 3 CLI smoke, 14 contract-identity tests |
+| `cargo deny check` | advisories, bans, licenses, sources ok |
+| `cargo audit` | no advisories against 95 lockfile entries |
+
+**Gate evidence (V1/V2):** same local slug distinguished across graphs and revisions (`HashSet` of three refs, Display output); two runs of one graph revision distinct; display-name change leaves `GraphRef`/`NodeRef` equal; `schema_version: 2` with an extra field rejects as `UnsupportedVersion`, not a shape error; wrong/unknown/missing record headers reject; missing, empty, foreign, unknown, revision-mismatched, and duplicate targets reject; `supersedes` foreign/not-earlier reject; self-lineage rejects; all six bundled schemas are valid Draft 2020-12 and compile offline; `$ref`s to unbundled `https://`, `file://`, and unknown in-namespace IDs fail to compile rather than fetch. Each valid fixture passes schema validation, typed parse, identity check, and a serialize/parse round trip.
+
+**Not claimed:** CLI exposure of validation (CS-06), bounded parsing and duplicate-key detection (CS-05), node contract bodies (CS-03), hosted matrix for this commit (queued on push; recorded at CS-07).
+
+**Acceptance:** CS-02 gate passed locally. Implementation commit SHA is recorded in the CS-03 entry.  
+**Open blockers:** none.

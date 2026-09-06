@@ -1,0 +1,26 @@
+{
+  "record": "graph_spec",
+  "schema_version": 1,
+  "graph_id": "review_pilot",
+  "revision": 2,
+  "nodes": [
+    {
+      "id": "cs_packet",
+      "revision": 1
+    }
+  ],
+  "targets": [
+    {
+      "graph_id": "review_pilot",
+      "node_id": "cs_packet",
+      "revision": 1
+    }
+  ],
+  "budget": {
+    "total_attempts": 3
+  },
+  "supersedes": {
+    "graph_id": "review_pilot",
+    "revision": 2
+  }
+}

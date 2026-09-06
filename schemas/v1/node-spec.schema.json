@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://checkspan.invalid/schemas/v1/node-spec.schema.json",
+  "title": "NodeSpec",
+  "description": "A node's identity inside its graph: the graph-local name and the revision of its contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "revision"],
+  "properties": {
+    "id": { "$ref": "common.schema.json#/$defs/identifier" },
+    "revision": { "$ref": "common.schema.json#/$defs/revision" },
+    "display_name": { "$ref": "common.schema.json#/$defs/display_name" }
+  }
+}

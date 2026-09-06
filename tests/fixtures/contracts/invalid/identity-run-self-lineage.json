@@ -1,0 +1,10 @@
+{
+  "record": "graph_run",
+  "schema_version": 1,
+  "run_id": "run-0003",
+  "graph_ref": {
+    "graph_id": "review_pilot",
+    "revision": 1
+  },
+  "budget_lineage_ref": "run-0003"
+}

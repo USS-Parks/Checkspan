@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://checkspan.invalid/schemas/v1/node-ref.schema.json",
+  "title": "NodeRef",
+  "description": "Exact reference to one node revision inside one graph. The same node_id in another graph, or at another revision, is a different node.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["graph_id", "node_id", "revision"],
+  "properties": {
+    "graph_id": { "$ref": "common.schema.json#/$defs/identifier" },
+    "node_id": { "$ref": "common.schema.json#/$defs/identifier" },
+    "revision": { "$ref": "common.schema.json#/$defs/revision" }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://checkspan.invalid/schemas/v1/graph-ref.schema.json",
+  "title": "GraphRef",
+  "description": "Exact reference to one graph revision.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["graph_id", "revision"],
+  "properties": {
+    "graph_id": { "$ref": "common.schema.json#/$defs/identifier" },
+    "revision": { "$ref": "common.schema.json#/$defs/revision" }
+  }
+}

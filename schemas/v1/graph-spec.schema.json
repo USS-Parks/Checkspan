@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://checkspan.invalid/schemas/v1/graph-spec.schema.json",
+  "title": "GraphSpec",
+  "description": "One immutable revision of a graph: its nodes, the targets that define completion, and the graph-wide budget. Cross-record rules (targets resolve to nodes in this graph at their exact revision, no duplicate node IDs, supersedes names an earlier revision of the same graph) are enforced by the identity check, not by this schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["record", "schema_version", "graph_id", "revision", "nodes", "targets", "budget"],
+  "properties": {
+    "record": { "const": "graph_spec" },
+    "schema_version": { "const": 1 },
+    "graph_id": { "$ref": "common.schema.json#/$defs/identifier" },
+    "revision": { "$ref": "common.schema.json#/$defs/revision" },
+    "display_name": { "$ref": "common.schema.json#/$defs/display_name" },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "node-spec.schema.json" }
+    },
+    "targets": {
+      "description": "Required targets. A run is complete only when every target is accepted; an empty list is not a valid graph.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "node-ref.schema.json" }
+    },
+    "budget": { "$ref": "#/$defs/budget" },
+    "supersedes": { "$ref": "graph-ref.schema.json" }
+  },
+  "$defs": {
+    "budget": {
+      "description": "Graph-wide limits. Every started attempt counts against total_attempts; a revision or re-run inherits consumption through the run's budget lineage.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_attempts"],
+      "properties": {
+        "total_attempts": { "type": "integer", "minimum": 1, "maximum": 4294967295 },
+        "deadline": { "$ref": "common.schema.json#/$defs/timestamp" }
+      }
+    }
+  }
+}
