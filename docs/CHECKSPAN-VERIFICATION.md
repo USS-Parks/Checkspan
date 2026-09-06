@@ -1,6 +1,6 @@
 # Checkspan — verification ledger
 
-**State:** planning only, 2026-09-06. **No implementation, native runtime, retrieval, model/agent, evaluation, hosted CI, operator-signature, or release gate has run.**
+**State:** M1 in progress on `codex/checkspan-m1`, 2026-09-06. Full STS approved by Basho on 2026-09-06; execution halts at each explicit stop. **No native runtime, retrieval, model/agent, evaluation, hosted CI, operator-signature, or release gate has run.**
 
 The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approval scope. Document review is not product acceptance.
 
@@ -8,7 +8,7 @@ The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approva
 
 | Milestone | Prompts | Authorization | Implementation | Acceptance evidence |
 | --- | --- | --- | --- | --- |
-| M1 Contract explorer | CS-01–CS-07 | Not approved | Not started | Not run |
+| M1 Contract explorer | CS-01–CS-07 | Approved (full STS, 2026-09-06) | CS-01 complete, local gates passed | Hosted: not run; recorded at CS-07 |
 | M2 Durable run ledger | CS-08–CS-14 | Not approved | Not started | Not run |
 | M3 Multi-agent RAG and software pilot | CS-15–CS-24 → CS-R01–CS-R12 → CS-25 | Not approved | Not started | Not run |
 | M4 GitHub-backed evidence | CS-26–CS-31 | Not approved | Not started | Not run |

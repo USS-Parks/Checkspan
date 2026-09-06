@@ -1,0 +1,22 @@
+[package]
+name = "checkspan"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+description = "Work you can verify: a DAG of immutable contracts, candidate artifacts, verifier receipts, and human decisions."
+repository = "https://github.com/USS-Parks/Checkspan"
+publish = false
+
+[lib]
+name = "checkspan"
+path = "src/lib.rs"
+
+[[bin]]
+name = "checkspan"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.6.6", features = ["derive"] }
+
+[lints.rust]
+unsafe_code = "forbid"
