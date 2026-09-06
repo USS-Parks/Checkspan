@@ -454,6 +454,7 @@ fn child_claim_worker() {
             format!("busy active={active} max={max_active}")
         }
         Ok(ClaimOutcome::NothingReady { .. }) => "nothing".to_string(),
+        Ok(ClaimOutcome::BudgetExhausted(reason)) => format!("budget {reason}"),
         Err(e) => format!("error {e}"),
     };
     fs::write(out, line).unwrap();

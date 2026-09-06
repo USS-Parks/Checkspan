@@ -387,6 +387,11 @@ pub trait Ledger {
     fn attempts(&self, run_id: &RunId, node_id: &NodeId) -> Result<Vec<Attempt>, StoreError>;
     /// Ids of receipts revoked in a run.
     fn revoked_receipts(&self, run_id: &RunId) -> Result<BTreeSet<String>, StoreError>;
+    /// One stored run record.
+    fn run(&self, run_id: &RunId) -> Result<Option<GraphRun>, StoreError>;
+    /// Attempts dispatched in a run, counted from its `attempt_dispatched`
+    /// events; every started attempt is one, whatever became of it.
+    fn dispatch_count(&self, run_id: &RunId) -> Result<u32, StoreError>;
     /// Every active claim in the store, oldest first.
     fn active_claims(&self) -> Result<Vec<ClaimRow>, StoreError>;
     /// One claim row.
@@ -540,6 +545,26 @@ fn claim_from_row(r: &rusqlite::Row<'_>) -> rusqlite::Result<ClaimRow> {
     })
 }
 
+fn read_run(conn: &Connection, run_id: &RunId) -> Result<Option<GraphRun>, StoreError> {
+    let json: Option<String> = conn
+        .query_row(
+            "SELECT run_json FROM runs WHERE run_id = ?1",
+            params![run_id.as_str()],
+            |r| r.get(0),
+        )
+        .optional()?;
+    json.map(|j| parse_record(&j).map_err(corrupt)).transpose()
+}
+
+fn read_dispatch_count(conn: &Connection, run_id: &RunId) -> Result<u32, StoreError> {
+    let n: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM events WHERE run_id = ?1 AND kind = 'attempt_dispatched'",
+        params![run_id.as_str()],
+        |r| r.get(0),
+    )?;
+    Ok(u32::try_from(n).unwrap_or(u32::MAX))
+}
+
 fn read_active_claims(conn: &Connection) -> Result<Vec<ClaimRow>, StoreError> {
     let mut stmt = conn.prepare(&format!(
         "SELECT {CLAIM_COLUMNS} FROM claims WHERE active = 1 ORDER BY claimed_at, run_id, fence"
@@ -595,6 +620,14 @@ impl Ledger for Store {
         read_revoked(&self.conn, run_id)
     }
 
+    fn run(&self, run_id: &RunId) -> Result<Option<GraphRun>, StoreError> {
+        read_run(&self.conn, run_id)
+    }
+
+    fn dispatch_count(&self, run_id: &RunId) -> Result<u32, StoreError> {
+        read_dispatch_count(&self.conn, run_id)
+    }
+
     fn active_claims(&self) -> Result<Vec<ClaimRow>, StoreError> {
         read_active_claims(&self.conn)
     }
@@ -637,6 +670,14 @@ impl Ledger for Tx<'_> {
 
     fn revoked_receipts(&self, run_id: &RunId) -> Result<BTreeSet<String>, StoreError> {
         read_revoked(&self.inner, run_id)
+    }
+
+    fn run(&self, run_id: &RunId) -> Result<Option<GraphRun>, StoreError> {
+        read_run(&self.inner, run_id)
+    }
+
+    fn dispatch_count(&self, run_id: &RunId) -> Result<u32, StoreError> {
+        read_dispatch_count(&self.inner, run_id)
     }
 
     fn active_claims(&self) -> Result<Vec<ClaimRow>, StoreError> {
@@ -828,15 +869,7 @@ impl Store {
 
     /// Load a stored run.
     pub fn load_run(&self, run_id: &RunId) -> Result<Option<GraphRun>, StoreError> {
-        let json: Option<String> = self
-            .conn
-            .query_row(
-                "SELECT run_json FROM runs WHERE run_id = ?1",
-                params![run_id.as_str()],
-                |r| r.get(0),
-            )
-            .optional()?;
-        json.map(|j| parse_record(&j).map_err(corrupt)).transpose()
+        read_run(&self.conn, run_id)
     }
 
     /// Seal a finished attempt: insert its record and append `attempt_sealed`

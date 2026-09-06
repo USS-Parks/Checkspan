@@ -8,7 +8,7 @@
 - Implementation authorization: **full STS approved by Basho on 2026-09-06** ("Approved for full STS now"). Execution proceeds sequentially and halts at every explicit stop in PSPR §0.3; the first stop is the M1 boundary after CS-07.
 - Implementation branch: `codex/checkspan-m1`. Per Basho's instruction of 2026-09-06, every completed prompt is committed on that branch, fast-forwarded into `main`, and both refs are pushed.
 - M2 authorization: **"Run M2 STS" received from Basho on 2026-09-06** after the M1 report; CS-08 through CS-14 are authorized, with the M2 boundary (after CS-14) as the next explicit stop. Basho reiterated: commit and merge to `main` after every prompt.
-- Current prompt: **CS-12 complete; CS-13 next.**
+- Current prompt: **CS-13 complete; CS-14 (M2 acceptance) next.**
 - Implemented product behavior: `checkspan validate <file>` and `checkspan inspect <file>` over any supported record, with graph admission (dependency resolution, port and type compatibility, cycles, hidden proof dependencies, external imports, gate wait chains, target closure, deterministic order) for graph documents; stable JSON output and exit codes; no dispatch, run store, or writes.
 
 ## DOC-00 — Name, repository wiring, and review draft
@@ -370,4 +370,29 @@ No git worktree other than the canonical checkout is registered (`git worktree l
 **Not claimed:** abrupt process termination and reopening (CS-14); retry limits and budgets (`RetryAllowed` is not emitted by the scheduler yet, CS-13); receipt admission and the pre-acceptance recheck call (CS-19); any worker execution (CS-17); hosted matrix for this commit (queued on push; recorded at CS-14).
 
 **Acceptance:** CS-12 gate passed locally. Implementation commit SHA is recorded in the CS-13 entry.  
+**Open blockers:** none.
+
+## CS-13 — Enforce retry limits and persistent budgets
+
+**Date:** 2026-09-06.  
+**Source SHA before work:** 306989af87ca098203f78b18fea455bfc415d39c (CS-12 implementation commit; `main`).  
+
+**Changed paths:** `src/budget/mod.rs` (new); `src/store/mod.rs` (`Ledger::run`, `Ledger::dispatch_count`); `src/scheduler/mod.rs` (budget gate before any claim, `ClaimOutcome::BudgetExhausted`, the retry's narrowing carried on the claim); `src/lib.rs`; `tests/retry_budget.rs` (new); `tests/claim_ownership.rs`; this log; the verification ledger; the dependency record.
+
+**Design as implemented:** consumption is never kept in memory: `budget_status` counts a run's `attempt_dispatched` events and walks `budget_lineage_ref` through stored run records (refusing loops and unknown runs), so every started attempt counts whatever became of it, and a restart, a re-run with lineage, or a new graph revision run with lineage inherits the spend. The graph declares `total_attempts` and an optional `deadline`; when either is spent the status reports the reason. `disposition` classifies a node's current outcome (`rejected` from a verdict; `timeout` or `infrastructure` from the sealed attempt's execution outcome) and returns `Retry` only if the class is in the node's `allowed_failure_classes`, `attempts_started` is below `max_attempts` (default three including the first), the graph budget has room, and the deadline has not passed; otherwise `Exhausted` with the reason and the policy's route. `apply_retry_policy` runs that decision inside one transaction: a permitted retry records `retry_allowed` with the checked narrowing; an exhausted node routed to `cancel` is cancelled with the reason in the event; one routed to `gate` is left in place for the gate-packet step and reported as such. `check_narrowing` accepts only dropping optional ports and restricting a port's sources to a subset of its approved scope; dropping a required port, naming an unknown port, duplicates, an empty source list, or any source outside the contract (`WidensScope`) is refused, and the acceptance contract is not an input to narrowing at all. The scheduler refuses every claim while the graph budget or deadline is exhausted and carries the pending narrowing on the claim it issues; a human gate decision may reopen a node past its automatic cap, but never past the graph budget.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed |
+| `cargo test --locked` | passed: 138 tests (131 prior + 7 retry and budget) |
+| `cargo deny check` / `cargo audit` | not rerun; no dependency change since CS-09 |
+
+**Gate evidence (V1/V3, real SQLite):** a reclaimed attempt, a rejected attempt, and a timed-out attempt each count, the first two are retried with their class named, and the third exhausts the node at its cap of three with route `gate`, writing nothing and leaving the node `failed`; the counts and the decision are identical after closing and reopening the file; a class outside the policy exhausts immediately and the `cancel` route cancels the node with the reason recorded, for a rejection and for a timeout alike; a graph budget of three is spent across run-0001 (two reclaimed attempts) and run-0002 with lineage (one more), after which retry is exhausted with `graph_budget` and the scheduler refuses to claim; a new graph revision run with lineage still sees three consumed and cannot claim, only an explicit larger budget in a further revision leaves room, a lineage naming an unknown run is refused, and all of it reads the same after reopening the file; a passed deadline refuses new claims and retries while an earlier moment allows them; narrowing drops an optional port and restricts a port to a subset while leaving the contract untouched, and refuses a required port, an unknown port, duplicates, dropping and restricting the same port, an empty source list, and a source outside the approved scope; through the store, dropping a required port is refused with nothing recorded, a valid narrowing with a repair hint is recorded and reaches the next claim and its attempt record, and the stored graph digest and contract are byte-identical afterwards; widening a port's sources is refused, and the approved path (a new node revision in a new graph revision) claims normally while the previous run's attempts still count against the lineage budget.
+
+**Not claimed:** the gate packet an exhausted `gate` route needs (CS-21); receipt admission (CS-19); abrupt termination and native Linux (CS-14); hosted matrix for this commit (queued on push; recorded at CS-14).
+
+**Acceptance:** CS-13 gate passed locally. Implementation commit SHA is recorded in the CS-14 entry.  
 **Open blockers:** none.

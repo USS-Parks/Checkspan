@@ -15,6 +15,7 @@
 
 use std::fmt;
 
+use crate::budget::{ExhaustReason, Narrowing, budget_status, pending_narrowing};
 use crate::contracts::{
     Attempt, AttemptNumber, Execution, ExecutionOutcome, GraphRun, GraphSpec, Ident, NodeId,
     NodeSpec, NodeStatus, NodeView, ReceiptRef, RecordKind, ResourceAccess, RunId, SchemaVersion,
@@ -72,6 +73,8 @@ pub struct Claim {
     pub owner: ControllerId,
     /// Dependency receipts pinned at dispatch.
     pub dependency_receipts: Vec<ReceiptRef>,
+    /// The narrowing recorded by the retry that reopened the node, if any.
+    pub narrowing: Option<Narrowing>,
 }
 
 /// What a claim attempt produced.
@@ -86,6 +89,8 @@ pub enum ClaimOutcome {
         /// The cap.
         max_active: usize,
     },
+    /// The graph-wide budget or deadline forbids any new attempt.
+    BudgetExhausted(ExhaustReason),
     /// No open node can be dispatched right now.
     NothingReady {
         /// Open nodes with unresolved dependencies and why.
@@ -323,6 +328,16 @@ impl<'a> Scheduler<'a> {
                     return Err(StoreError::Corrupt("replay failed".into()));
                 }
             };
+            let budget = match budget_status(tx, self.spec, self.run, now) {
+                Ok(budget) => budget,
+                Err(e) => {
+                    failure = Some(SchedulerError::Invalid(e.to_string()));
+                    return Err(StoreError::Corrupt("budget unavailable".into()));
+                }
+            };
+            if let Some(reason) = budget.exhaustion() {
+                return Ok(ClaimOutcome::BudgetExhausted(reason));
+            }
             let active = tx.active_claims()?;
             if active.len() >= max_active {
                 return Ok(ClaimOutcome::Busy {
@@ -398,6 +413,7 @@ impl<'a> Scheduler<'a> {
                     fence,
                     owner: controller.clone(),
                     dependency_receipts,
+                    narrowing: pending_narrowing(&events, node_id),
                 }));
             }
             Ok(ClaimOutcome::NothingReady { blocked, conflicts })
