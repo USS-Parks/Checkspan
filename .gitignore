@@ -1,0 +1,6 @@
+/target/
+/dist/
+/.checkspan/
+.env
+.env.*
+!.env.example
