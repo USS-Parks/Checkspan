@@ -127,10 +127,18 @@ impl std::error::Error for ContractError {
     }
 }
 
-#[derive(Deserialize)]
-struct Header {
-    record: String,
-    schema_version: SchemaVersion,
+/// The self-describing header every top-level record carries.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct RecordHeader {
+    /// The declared record kind, as written (it may be unknown to this build).
+    pub record: String,
+    /// The declared schema version.
+    pub schema_version: SchemaVersion,
+}
+
+/// Read the header of a decoded document without interpreting its body.
+pub fn read_header(value: &Value) -> Result<RecordHeader, serde_json::Error> {
+    RecordHeader::deserialize(value)
 }
 
 /// Parse `text` as record `T`, checking the header before the body.
@@ -142,7 +150,7 @@ pub fn parse_record<T: Record>(text: &str) -> Result<T, ContractError> {
 /// Parse an already-decoded JSON value as record `T`, checking the header
 /// before the body.
 pub fn parse_record_value<T: Record>(value: Value) -> Result<T, ContractError> {
-    let header = Header::deserialize(&value).map_err(ContractError::Header)?;
+    let header = read_header(&value).map_err(ContractError::Header)?;
     if header.record != T::KIND.as_str() {
         return Err(ContractError::WrongRecord {
             expected: T::KIND,

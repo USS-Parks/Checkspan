@@ -8,7 +8,7 @@ The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approva
 
 | Milestone | Prompts | Authorization | Implementation | Acceptance evidence |
 | --- | --- | --- | --- | --- |
-| M1 Contract explorer | CS-01–CS-07 | Approved (full STS, 2026-09-06) | CS-01–CS-04 complete; local gates passed | CS-01 SHA 0930294: hosted_ci passed (run 34056847082, ubuntu-24.04 + windows-2025); M1 hosted acceptance recorded at CS-07 |
+| M1 Contract explorer | CS-01–CS-07 | Approved (full STS, 2026-09-06) | CS-01–CS-05 complete; local gates passed | CS-01 SHA 0930294: hosted_ci passed (run 34056847082, ubuntu-24.04 + windows-2025); M1 hosted acceptance recorded at CS-07 |
 | M2 Durable run ledger | CS-08–CS-14 | Not approved | Not started | Not run |
 | M3 Multi-agent RAG and software pilot | CS-15–CS-24 → CS-R01–CS-R12 → CS-25 | Not approved | Not started | Not run |
 | M4 GitHub-backed evidence | CS-26–CS-31 | Not approved | Not started | Not run |
@@ -18,7 +18,7 @@ The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approva
 
 | Case | Required behavior | Owning prompts | Evidence now |
 | --- | --- | --- | --- |
-| PC-01 | Unknown/duplicate ID, bad type, or cycle rejected before dispatch | CS-02–CS-06 | CS-02: duplicate node ID, unknown/foreign/mismatched target, unknown schema version rejected (`tests/contract_identity.rs`, local_native passed). Types and cycles pending CS-03–CS-06. |
+| PC-01 | Unknown/duplicate ID, bad type, or cycle rejected before dispatch | CS-02–CS-06 | CS-02: duplicate node ID, unknown/foreign/mismatched target, unknown schema version rejected (`tests/contract_identity.rs`, local_native passed). CS-03: bad port/output types rejected. CS-05: oversized, deep, duplicate-key, and unsupported-header documents rejected before interpretation (`tests/document_validation.rs`, local_native passed). Cycles pending CS-06. |
 | PC-02 | Required target remains blocked after upstream failure | CS-06, CS-10–CS-12 | Design only |
 | PC-03 | Expired/revoked prerequisite cannot be reused | CS-11, CS-19 | Design only |
 | PC-04 | Changed candidate requires matching fresh check evidence | CS-15, CS-18, CS-29 | Design only |

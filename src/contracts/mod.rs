@@ -37,6 +37,7 @@ pub use node::{
     VerifierRef,
 };
 pub use record::{
-    ContractError, Record, RecordKind, SchemaVersion, parse_record, parse_record_value,
+    ContractError, Record, RecordHeader, RecordKind, SchemaVersion, parse_record,
+    parse_record_value, read_header,
 };
 pub use view::{NodeStatus, NodeView, ViewError};

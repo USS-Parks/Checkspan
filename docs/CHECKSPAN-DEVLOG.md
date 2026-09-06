@@ -7,8 +7,8 @@
 - Repository: [USS-Parks/Checkspan](https://github.com/USS-Parks/Checkspan).
 - Implementation authorization: **full STS approved by Basho on 2026-09-06** ("Approved for full STS now"). Execution proceeds sequentially and halts at every explicit stop in PSPR §0.3; the first stop is the M1 boundary after CS-07.
 - Implementation branch: `codex/checkspan-m1`. Per Basho's instruction of 2026-09-06, every completed prompt is committed on that branch, fast-forwarded into `main`, and both refs are pushed.
-- Current prompt: **CS-04 complete; CS-05 next.**
-- Implemented product behavior: `checkspan --help` / `--version`; library-level contracts for graphs, nodes, evidence, attempts, verifier receipts, gate packets, gate decisions, and node views, with bundled schemas and record-level binding checks (no CLI exposure yet).
+- Current prompt: **CS-05 complete; CS-06 next.**
+- Implemented product behavior: `checkspan --help` / `--version`; library-level contracts for graphs, nodes, evidence, attempts, verifier receipts, gate packets, gate decisions, and node views; a bounded offline validation pipeline (`checkspan::validation::validate`) that takes bytes and returns staged, path-bearing diagnostics or a typed record (no CLI exposure yet).
 
 ## DOC-00 — Name, repository wiring, and review draft
 
@@ -159,4 +159,30 @@ Draft 0.1 parked RAG ingestion, model execution, and parallel workers. Draft 0.2
 **Not claimed:** any state transition (CS-10); receipt admission against a verifier identity or trust policy (CS-19); signature verification of decisions (CS-22); expiry against a real clock; hosted matrix for this commit (queued on push; recorded at CS-07).
 
 **Acceptance:** CS-04 gate passed locally. Implementation commit SHA is recorded in the CS-05 entry.  
+**Open blockers:** none.
+
+## CS-05 — Implement bounded offline document validation
+
+**Date:** 2026-09-06.  
+**Source SHA before work:** 3eecbf06344080a4c15c409fa9ad5fa984fb4d26 (CS-04 implementation commit; also `main` after the fast-forward merge).  
+
+**Changed paths:** `src/validation/{mod,parse,schema}.rs` (new); `src/lib.rs`; `src/contracts/{record,mod}.rs` (public `RecordHeader` / `read_header`); `Cargo.toml` (`jsonschema` promoted to a runtime dependency); `deny.toml` (allow `MIT-0`, `Zlib`); `tests/document_validation.rs` (new); this log; the verification ledger; the dependency record.
+
+**Design as implemented:** `validate(bytes, &Limits)` runs fixed stages in order and stops at the first that fails: size (default 4 MiB), UTF-8, strict parse, header, schema, shape, contract. The strict parser is a serde visitor that builds a `serde_json::Value` while enforcing a nesting limit (default 64 containers), rejecting any repeated key inside one object, and rejecting trailing content; every parse failure carries the JSON pointer of the container or key involved. The header stage requires a JSON object with `record` and `schema_version` and matches them against the registry, listing the supported records on failure. The schema stage uses validators compiled once per process from the bundled corpus through an in-crate retriever that serves only bundled `$id`s; `jsonschema` is built with `default-features = false`, so no HTTP, file, or TLS resolver exists in the binary. A frozen keyword set (`SUPPORTED_KEYWORDS`) is enforced before compilation: any schema using another Draft 2020-12 keyword is refused. Schema diagnostics carry the instance JSON pointer; contract diagnostics carry the containing field (`/targets`, `/nodes/<i>`, `/status`, ...). A valid document yields a `ValidatedRecord` of the matching kind. Nothing in the module touches the filesystem or the network.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed |
+| `cargo test --locked` | passed: 62 tests (8 unit incl. 5 parser, 3 CLI smoke, 14 identity, 9 node/evidence, 13 outcome, 15 document validation) |
+| `cargo deny check` | advisories, bans, licenses, sources ok (after allowing `MIT-0` and `Zlib`, which entered the runtime graph with `jsonschema`) |
+| `cargo audit` | no advisories against 95 lockfile entries |
+
+**Gate evidence (V1/V2):** oversized input rejects at the size stage with nothing interpreted; a 70-deep nesting inside an otherwise valid graph rejects at the depth stage with the path `/nodes/0/display_name/0/0...` and reaches the schema stage only when the limit is raised; duplicate keys reject with the repeated key's path (`/graph_id`, `/nodes/0/id`); empty, malformed, unterminated, trailing-content, and non-UTF-8 inputs reject at the syntax stage; non-object documents and missing or unsupported headers reject at the header stage with the supported list; schema diagnostics carry field paths (`/graph_id`, `/nodes/0`, `/verdict`); contract diagnostics name the containing field; every valid fixture of every record kind yields its typed record and every invalid top-level fixture is rejected by exactly one stage; `https://`, `http://`, `file://`, `../` traversal, unknown in-namespace, and missing-fragment references all fail to compile while a bundled reference compiles and validates; `Cargo.lock` contains no `reqwest`, `hyper`, `rustls`, `aws-lc-rs`, `tokio`, `ureq`, or `url`; the bundled corpus uses exactly the frozen keyword set and every frozen keyword has an inline positive and negative case (`type`, `properties`, `required`, `additionalProperties`, `enum`, `const`, `allOf`, `if`/`then`/`else`, `not`, `items`, `minItems`, `contains`/`minContains`/`maxContains`, `minimum`, `maximum`, `minLength`, `maxLength`, `pattern`, `format`, `$ref`/`$defs`); `$dynamicRef`, `unevaluatedProperties`, `dependentSchemas`, `patternProperties`, `$anchor`, `anyOf`, `oneOf`, `uniqueItems`, and `$comment` are refused before compilation while property names that merely look like keywords are not.
+
+**Not claimed:** CLI exposure (`validate`/`inspect` are CS-06); cross-node graph admission (CS-06); hosted matrix for this commit (queued on push; recorded at CS-07).
+
+**Acceptance:** CS-05 gate passed locally. Implementation commit SHA is recorded in the CS-06 entry.  
 **Open blockers:** none.

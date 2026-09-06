@@ -23,11 +23,13 @@ Lints: `unsafe_code = "forbid"` package-wide; `missing_docs = "warn"` on the lib
 | `clap` (features: `derive`) | 4.6.6 | MIT OR Apache-2.0 | Command-line parsing with generated help/version and stable exit codes | Hand-rolled argument parsing (rejected: help, errors, and exit-code conventions would be re-implemented), `argh`/`lexopt` (smaller, but the PSPR names `clap` and its derive API keeps subcommands declarative) | CS-01 |
 | `serde` (features: `derive`) | 1.0.229 | MIT OR Apache-2.0 | Typed contract records with `deny_unknown_fields` and `try_from` newtypes | Hand-written JSON mapping (rejected: every record would repeat the same strictness code) | CS-02 |
 | `serde_json` | 1.0.151 | MIT OR Apache-2.0 | JSON parsing to `Value` for header-first record dispatch, then typed deserialization | `json` crate (rejected: no serde integration) | CS-02 |
-| `jsonschema` (**dev-dependency**, `default-features = false`) | 0.54.0 | MIT | Draft 2020-12 validation of fixtures against the bundled schemas in tests; no HTTP, file, or TLS resolver is compiled in | `boon` (rejected: smaller ecosystem; `jsonschema` is the PSPR default). Promotion to a runtime dependency is decided by the offline validation prompt. | CS-02 |
+| `jsonschema` (`default-features = false`) | 0.54.0 | MIT | Draft 2020-12 validation against the bundled schemas; no HTTP, file, or TLS resolver is compiled in, and every `$ref` is served by the in-crate bundled retriever | `boon` (rejected: smaller ecosystem; `jsonschema` is the PSPR default). Added as a dev-dependency in CS-02; promoted to a runtime dependency in CS-05. | CS-02, CS-05 |
 
 Transitive closure at CS-02: 90 crates (`cargo tree --edges normal,dev`), all MIT, Apache-2.0, Unicode-3.0, or Unlicense-OR-MIT (`cargo deny check licenses`). `cargo audit`: no advisories. No git or non-crates.io sources.
 
 CS-03, CS-04: no dependency change.
+
+CS-05: `jsonschema` promoted from dev-dependency to runtime dependency (same version and features; lockfile unchanged). Its runtime closure brings `MIT-0` (`borrow-or-share`) and `Zlib` (`foldhash`) into the product graph; both are OSI-approved permissive licenses and are now explicitly allowed in `deny.toml`. A test asserts that no HTTP client, TLS stack, async runtime, or URL-fetching crate appears in `Cargo.lock`.
 
 Schema `$id`s use `https://checkspan.invalid/schemas/v1/`. `.invalid` is reserved by RFC 2606 and never resolves, which makes the IDs identifiers rather than fetchable locations; the bundled registry is the only source of schema text. Changing the ID base is a schema-version change.
 
