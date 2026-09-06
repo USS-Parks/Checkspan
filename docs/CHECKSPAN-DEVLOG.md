@@ -8,7 +8,7 @@
 - Implementation authorization: **full STS approved by Basho on 2026-09-06** ("Approved for full STS now"). Execution proceeds sequentially and halts at every explicit stop in PSPR §0.3; the first stop is the M1 boundary after CS-07.
 - Implementation branch: `codex/checkspan-m1`. Per Basho's instruction of 2026-09-06, every completed prompt is committed on that branch, fast-forwarded into `main`, and both refs are pushed.
 - M2 authorization: **"Run M2 STS" received from Basho on 2026-09-06** after the M1 report; CS-08 through CS-14 are authorized, with the M2 boundary (after CS-14) as the next explicit stop. Basho reiterated: commit and merge to `main` after every prompt.
-- Current prompt: **CS-09 complete; CS-10 next.**
+- Current prompt: **CS-10 complete; CS-11 next.**
 - Implemented product behavior: `checkspan validate <file>` and `checkspan inspect <file>` over any supported record, with graph admission (dependency resolution, port and type compatibility, cycles, hidden proof dependencies, external imports, gate wait chains, target closure, deterministic order) for graph documents; stable JSON output and exit codes; no dispatch, run store, or writes.
 
 ## DOC-00 — Name, repository wiring, and review draft
@@ -295,4 +295,29 @@ No git worktree other than the canonical checkout is registered (`git worktree l
 **Not claimed:** state transitions (CS-10), dependency resolution (CS-11), claims and competing processes (CS-12), budgets (CS-13), abrupt process termination and native Linux (CS-14); a tamper-proof ledger (a writable local file is not one); the store location relative to a candidate checkout (the caller chooses the path; CS-15/CS-20 decide the default).
 
 **Acceptance:** CS-09 gate passed locally. Implementation commit SHA is recorded in the CS-10 entry.  
+**Open blockers:** none.
+
+## CS-10 — Implement the pure state reducer
+
+**Date:** 2026-09-06.  
+**Source SHA before work:** 18247ccc7bdc9ac309399eee6c479338592321ba (CS-09 implementation commit; `main`).  
+
+**Changed paths:** `src/state/mod.rs` (new); `src/lib.rs`; `tests/state_transitions.rs` (new); this log; the verification ledger; the dependency record.
+
+**Design as implemented:** `NodeEvent` is the typed vocabulary (`Dispatched`, `ExecutionFinished`, `ReceiptAdmitted`, `GateOpened`, `DecisionAdmitted`, `RetryAllowed`, `Cancelled`) with a fixed store kind and payload for each, and a decoder from stored events that takes the graph's `NodeRef` for the node. `NodeState::apply(&event)` is a pure function from state and event to the next state or a `TransitionError` (illegal from this status, stale attempt, wrong attempt number, wrong packet, unknown or malformed stored event, unknown node); on error the state is unchanged. The legal transitions are: open dispatches the next attempt number exactly or cancels; running finishes (completed keeps it running in a checking phase; failed and timed out are `failed`; cancelled is `cancelled`) or cancels; a checking attempt takes exactly one verdict for its own attempt (`accept` is the only route to `accepted`, `reject` is `rejected`, `undecidable` is `gated` awaiting its packet); rejected and failed nodes reopen only through `RetryAllowed`, escalate through `GateOpened`, or cancel; a gated node takes its packet, then exactly the decision for that packet (`retry`, `approve_action`, `deny_action`, and `record_assessment` reopen it; `cancel` and `revise` cancel it) or cancels; `accepted` and `cancelled` are terminal. `attempts_started` counts every dispatch and never decreases. `RunState` holds one state per graph node, replays a run's stored event log (skipping run-level events, failing on the first illegal one), and projects `NodeView`s in document order; `blocked_reason` is left to the scheduler.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed |
+| `cargo test --locked` | passed: 113 tests (104 prior + 9 state transition) |
+| `cargo deny check` / `cargo audit` | not rerun; no dependency change since CS-09 |
+
+**Gate evidence (V1):** the full transition matrix (9 reachable states including the checking phase and an undecidable node awaiting its packet, times 21 probe events) is asserted cell by cell and the only cell that reaches `accepted` is an admitted `accept` receipt on a checking attempt; an illegal event leaves the state unchanged and names the reason; a wrong attempt number, a stale attempt, and a wrong packet each produce their typed error; a timed-out or crashed attempt is `failed`, never `rejected`, and takes no verdict; every decision kind reopens a gated node without accepting it, keeps the attempt history, and allows the next attempt number, while `cancel` and `revise` cancel it; after a retry the previous attempt's completion and receipt are refused as stale and acceptance names the second attempt's receipt; an undecidable verdict gates the node and its view is inconsistent until the packet opens, then consistent; an eleven-event sequence replays to an identical state and view twice, and swapping any two adjacent events breaks the replay; every reachable state projects a view that passes the CS-04 view rules; a real store's event log (dispatch, sealed attempt, admitted receipt, dispatch and cancel of another node) replays into consistent views for all three graph nodes, removing the dispatch event makes the replay fail rather than accept, and an event for a node outside the graph is refused.
+
+**Not claimed:** who may emit each event (CS-11 dependencies, CS-12 claims, CS-13 budgets); persistence of views (the store event log is the source and replay rebuilds them); hosted matrix for this commit (queued on push; recorded at CS-14).
+
+**Acceptance:** CS-10 gate passed locally. Implementation commit SHA is recorded in the CS-11 entry.  
 **Open blockers:** none.
