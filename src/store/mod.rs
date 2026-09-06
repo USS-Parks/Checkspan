@@ -632,6 +632,73 @@ impl Store {
         .collect()
     }
 
+    /// One sealed attempt by number.
+    pub fn attempt(
+        &self,
+        run_id: &RunId,
+        node_id: &NodeId,
+        number: u32,
+    ) -> Result<Option<Attempt>, StoreError> {
+        let json: Option<String> = self
+            .conn
+            .query_row(
+                "SELECT attempt_json FROM attempts WHERE run_id = ?1 AND node_id = ?2 AND number = ?3",
+                params![run_id.as_str(), node_id.as_str(), number],
+                |r| r.get(0),
+            )
+            .optional()?;
+        json.map(|j| parse_record(&j).map_err(|e| StoreError::Corrupt(e.to_string())))
+            .transpose()
+    }
+
+    /// Revoke a stored receipt for future work by appending a run-level
+    /// `receipt_revoked` event. The receipt row and every earlier acceptance
+    /// stay exactly as recorded.
+    pub fn revoke_receipt(
+        &mut self,
+        run_id: &RunId,
+        receipt_id: &str,
+        reason: &str,
+    ) -> Result<(), StoreError> {
+        self.transaction(|tx| {
+            let exists: bool = tx.inner.query_row(
+                "SELECT EXISTS (SELECT 1 FROM receipts WHERE run_id = ?1 AND receipt_id = ?2)",
+                params![run_id.as_str(), receipt_id],
+                |r| r.get(0),
+            )?;
+            if !exists {
+                return Err(StoreError::MissingReference(format!(
+                    "receipt {receipt_id}"
+                )));
+            }
+            tx.append_event(
+                run_id,
+                None,
+                "receipt_revoked",
+                &serde_json::json!({ "receipt_id": receipt_id, "reason": reason }),
+            )?;
+            Ok(())
+        })
+    }
+
+    /// Ids of receipts revoked in a run, from its event log.
+    pub fn revoked_receipts(
+        &self,
+        run_id: &RunId,
+    ) -> Result<std::collections::BTreeSet<String>, StoreError> {
+        let mut stmt = self.conn.prepare(
+            "SELECT json_extract(payload_json, '$.receipt_id') FROM events WHERE run_id = ?1 AND kind = 'receipt_revoked'",
+        )?;
+        let rows = stmt.query_map(params![run_id.as_str()], |r| r.get::<_, Option<String>>(0))?;
+        let mut out = std::collections::BTreeSet::new();
+        for row in rows {
+            if let Some(id) = row? {
+                out.insert(id);
+            }
+        }
+        Ok(out)
+    }
+
     /// One receipt by id.
     pub fn receipt(
         &self,

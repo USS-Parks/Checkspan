@@ -302,6 +302,7 @@ fn identity_path(error: &IdentityError) -> &'static str {
         }
         IdentityError::ZeroAttemptBudget => "/budget/total_attempts",
         IdentityError::SelfLineage(_) => "/budget_lineage_ref",
+        IdentityError::DuplicateImport(_) | IdentityError::SelfImport(_) => "/admitted_imports",
     }
 }
 

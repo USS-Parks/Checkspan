@@ -26,7 +26,9 @@ pub use gate::{
     DecisionKind, DecisionScope, GateDecision, GateError, GatePacket, GatePurpose,
     RequestedDecision,
 };
-pub use graph::{GraphBudget, GraphRef, GraphRun, GraphSpec, IdentityError, NodeRef};
+pub use graph::{
+    GraphBudget, GraphRef, GraphRun, GraphSpec, IdentityError, ImportedReceipt, NodeRef,
+};
 pub use ids::{
     AttemptNumber, Digest, Exactly, GraphId, Ident, InvalidValue, NodeId, Revision, RunId,
     Timestamp, Version,

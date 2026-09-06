@@ -441,6 +441,7 @@ fn a_run_state_replays_the_store_event_log_into_views() {
             run_id: run_id.clone(),
             graph_ref: spec.graph_ref(),
             budget_lineage_ref: None,
+            admitted_imports: vec![],
         })
         .unwrap();
     let ci = NodeId::new("cs_ci").unwrap();

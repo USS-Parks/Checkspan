@@ -9,6 +9,7 @@
 
 pub mod cli;
 pub mod contracts;
+pub mod deps;
 pub mod digests;
 pub mod graph;
 pub mod state;

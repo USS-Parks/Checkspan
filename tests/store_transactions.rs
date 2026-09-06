@@ -34,6 +34,7 @@ fn run_for(graph: &GraphSpec, run_id: &str) -> GraphRun {
         run_id: RunId::new(run_id).unwrap(),
         graph_ref: graph.graph_ref(),
         budget_lineage_ref: None,
+        admitted_imports: vec![],
     }
 }
 

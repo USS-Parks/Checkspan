@@ -124,7 +124,7 @@ fn valid_fixtures_pass_schema_parse_identity_and_round_trip() {
         }
         count += 1;
     }
-    assert_eq!(count, 4, "every valid fixture was exercised");
+    assert_eq!(count, 5, "every valid fixture was exercised");
 }
 
 #[test]
@@ -336,6 +336,39 @@ fn identity_fixtures_pass_the_schema_but_fail_identity_rules() {
             assert!(!error.to_string().is_empty());
         }
     }
+}
+
+#[test]
+fn imports_must_be_unique_per_node_and_never_from_this_run() {
+    for (name, expect) in [
+        (
+            "contracts/invalid/identity-import-duplicate.json",
+            "more than one admitted import",
+        ),
+        (
+            "contracts/invalid/identity-import-self.json",
+            "names a receipt from this run",
+        ),
+    ] {
+        let text = fixture(name);
+        assert_eq!(
+            schema_errors(GraphRun::SCHEMA_ID, &text),
+            Vec::<String>::new(),
+            "{name}"
+        );
+        let run: GraphRun = parse_record(&text).unwrap();
+        let errors = run.check_identity();
+        assert_eq!(errors.len(), 1, "{name}: {errors:?}");
+        assert!(
+            errors[0].to_string().contains(expect),
+            "{name}: {}",
+            errors[0]
+        );
+    }
+    let run: GraphRun =
+        parse_record(&fixture("contracts/valid/graph-run-with-import.json")).unwrap();
+    assert_eq!(run.admitted_imports.len(), 1);
+    assert_eq!(run.admitted_imports[0].receipt.run_id.as_str(), "run-0001");
 }
 
 #[test]

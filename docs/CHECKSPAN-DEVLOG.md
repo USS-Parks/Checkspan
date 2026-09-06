@@ -8,7 +8,7 @@
 - Implementation authorization: **full STS approved by Basho on 2026-09-06** ("Approved for full STS now"). Execution proceeds sequentially and halts at every explicit stop in PSPR §0.3; the first stop is the M1 boundary after CS-07.
 - Implementation branch: `codex/checkspan-m1`. Per Basho's instruction of 2026-09-06, every completed prompt is committed on that branch, fast-forwarded into `main`, and both refs are pushed.
 - M2 authorization: **"Run M2 STS" received from Basho on 2026-09-06** after the M1 report; CS-08 through CS-14 are authorized, with the M2 boundary (after CS-14) as the next explicit stop. Basho reiterated: commit and merge to `main` after every prompt.
-- Current prompt: **CS-10 complete; CS-11 next.**
+- Current prompt: **CS-11 complete; CS-12 next.**
 - Implemented product behavior: `checkspan validate <file>` and `checkspan inspect <file>` over any supported record, with graph admission (dependency resolution, port and type compatibility, cycles, hidden proof dependencies, external imports, gate wait chains, target closure, deterministic order) for graph documents; stable JSON output and exit codes; no dispatch, run store, or writes.
 
 ## DOC-00 — Name, repository wiring, and review draft
@@ -320,4 +320,29 @@ No git worktree other than the canonical checkout is registered (`git worktree l
 **Not claimed:** who may emit each event (CS-11 dependencies, CS-12 claims, CS-13 budgets); persistence of views (the store event log is the source and replay rebuilds them); hosted matrix for this commit (queued on push; recorded at CS-14).
 
 **Acceptance:** CS-10 gate passed locally. Implementation commit SHA is recorded in the CS-11 entry.  
+**Open blockers:** none.
+
+## CS-11 — Resolve run-scoped dependencies and imports
+
+**Date:** 2026-09-06.  
+**Source SHA before work:** 4ce7a905f98cc8ff33bd20ffa53852464ef8837f (CS-10 implementation commit; `main`).  
+
+**Changed paths:** `src/deps/mod.rs` (new); `src/lib.rs`; `src/contracts/graph.rs` (`ImportedReceipt`, `GraphRun.admitted_imports`, two identity rules); `src/contracts/ids.rs` (`Timestamp::unix_nanos` / `is_before`); `src/contracts/mod.rs`; `src/store/mod.rs` (`attempt`, `revoke_receipt`, `revoked_receipts`); `src/validation/mod.rs`; `schemas/v1/graph-run.schema.json` (`admitted_imports`); `tests/dependency_binding.rs` (new); `tests/contract_identity.rs`, `tests/store_transactions.rs`, `tests/state_transitions.rs`; fixtures (`contracts/valid/graph-run-with-import.json`, two invalid identity cases); this log; the verification ledger; the dependency record.
+
+**Design as implemented:** `GraphRun` gains `admitted_imports`, a list of `ImportedReceipt` records naming the node of this graph an import stands in for, the receipt in the run that issued it, the result digest and result type it must carry, a subject, an admission time, and an optional expiry; a run cannot list two imports for one node or import a receipt from itself. `DependencyService` resolves a node's declared dependencies against exactly two sources: a node accepted in this run (its view's receipt) or an admitted import for that node; nothing else in the store is consulted, so an older run's accepted node is invisible to a new run unless imported. Every receipt used passes `admissible`: it must be stored, an `accept` verdict, about the exact node revision the dependency names, over a sealed attempt whose result type equals the consumer's `expected_type`, with a result digest equal to the receipt's (and to the import's declared digest), unexpired at `now` (RFC 3339 instants are compared across offsets), and not revoked. `resolve` returns an immutable `DependencySnapshot` of receipt references to pin in the attempt; `recheck` runs the same checks against the pinned snapshot before acceptance, and `recheck_refs` does so for the references stored in an attempt record, refusing missing or extra receipts. `Store::revoke_receipt` appends a run-level `receipt_revoked` event; the receipt row and the historical acceptance are untouched. `blocked_reason` renders the blockers for a view.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed (one scoped `result_large_err` allow with a stated reason in `src/deps/mod.rs`) |
+| `cargo test --locked` | passed: 122 tests (113 prior + 7 dependency binding + 1 identity + 1 timestamp unit) |
+| `cargo deny check` / `cargo audit` | not rerun; no dependency change since CS-09 |
+
+**Gate evidence (V1/V2, real store):** a same-run dependency resolves to the exact receipt, run, node revision, and result digest, its snapshot rechecks clean, and a node whose dependency is still open is blocked with a reason naming it; run-0002 of the same graph cannot use run-0001's accepted `cs_patch` (blocked as open) although the receipt is still stored; an explicit import resolves with `Imported` provenance, while an import with the wrong digest, the wrong result type, an unknown receipt, or a past expiry is blocked with the matching reason, and a receipt about `cs_patch@1` cannot be imported for a graph revision where `cs_patch` is revision 2; duplicate imports and self-imports fail the run's identity check and round-trip through the schema; a receipt valid until 2026-10-01 resolves at 2026-09-06 and is blocked as expired at 2026-10-02, the earlier snapshot fails its recheck, and the producing node stays accepted; revoking a receipt appends a run-level event, leaves the receipt row and the historical acceptance untouched, blocks fresh resolution, and fails the recheck of a snapshot pinned before the revocation; a reject receipt, a receipt whose result digest differs from what is expected, and a result type that differs from the consumer's are each refused, and a pinned set with an extra or missing receipt fails the recheck; RFC 3339 instants compare correctly across offsets, fractions, and the epoch.
+
+**Not claimed:** who calls `resolve` at dispatch and `recheck` before acceptance (CS-12 and CS-19); enforcement that a terminal node is never sealed again (the store accepts the row; the scheduler must consult the reducer first, CS-12); hosted matrix for this commit (queued on push; recorded at CS-14).
+
+**Acceptance:** CS-11 gate passed locally. Implementation commit SHA is recorded in the CS-12 entry.  
 **Open blockers:** none.

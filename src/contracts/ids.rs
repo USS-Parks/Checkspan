@@ -271,6 +271,57 @@ impl Timestamp {
     pub fn as_str(&self) -> &str {
         &self.0
     }
+
+    /// The instant this timestamp names, as nanoseconds since the Unix
+    /// epoch in UTC. Two texts with different offsets that name the same
+    /// instant compare equal here even though they are different strings.
+    pub fn unix_nanos(&self) -> i128 {
+        let b = self.0.as_bytes();
+        let num = |range: std::ops::Range<usize>| -> i64 {
+            b[range]
+                .iter()
+                .fold(0i64, |acc, d| acc * 10 + i64::from(d - b'0'))
+        };
+        let (year, month, day) = (num(0..4), num(5..7), num(8..10));
+        let (hour, minute, second) = (num(11..13), num(14..16), num(17..19));
+        let mut i = 19;
+        let mut nanos: i128 = 0;
+        if b.get(i) == Some(&b'.') {
+            i += 1;
+            let start = i;
+            while i < b.len() && b[i].is_ascii_digit() {
+                i += 1;
+            }
+            let digits = &self.0[start..i];
+            let mut fraction: i128 = digits.parse().unwrap_or(0);
+            for _ in digits.len()..9 {
+                fraction *= 10;
+            }
+            nanos = fraction;
+        }
+        let offset_seconds: i64 = match b[i] {
+            b'Z' | b'z' => 0,
+            sign => {
+                let magnitude = num(i + 1..i + 3) * 3600 + num(i + 4..i + 6) * 60;
+                if sign == b'-' { -magnitude } else { magnitude }
+            }
+        };
+        // Days from civil date (Howard Hinnant's algorithm).
+        let y = if month <= 2 { year - 1 } else { year };
+        let era = if y >= 0 { y } else { y - 399 } / 400;
+        let yoe = y - era * 400;
+        let mp = (month + 9) % 12;
+        let doy = (153 * mp + 2) / 5 + day - 1;
+        let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+        let days = era * 146_097 + doe - 719_468;
+        let seconds = days * 86_400 + hour * 3_600 + minute * 60 + second - offset_seconds;
+        i128::from(seconds) * 1_000_000_000 + nanos
+    }
+
+    /// Whether this instant is strictly before `other`.
+    pub fn is_before(&self, other: &Timestamp) -> bool {
+        self.unix_nanos() < other.unix_nanos()
+    }
 }
 
 impl TryFrom<String> for Timestamp {
@@ -357,6 +408,28 @@ mod tests {
     fn revision_starts_at_one() {
         assert!(Revision::new(0).is_err());
         assert_eq!(Revision::new(1).unwrap().get(), 1);
+    }
+
+    #[test]
+    fn timestamp_instants_order_across_offsets() {
+        let t = |s: &str| Timestamp::new(s).unwrap();
+        assert_eq!(t("1970-01-01T00:00:00Z").unix_nanos(), 0);
+        assert_eq!(t("1970-01-01T00:00:01.5Z").unix_nanos(), 1_500_000_000);
+        assert_eq!(
+            t("2026-09-06T12:00:00+02:00").unix_nanos(),
+            t("2026-09-06T10:00:00Z").unix_nanos()
+        );
+        assert_eq!(
+            t("2026-09-06T00:30:00-05:00").unix_nanos(),
+            t("2026-09-06T05:30:00Z").unix_nanos()
+        );
+        assert_eq!(
+            t("2000-03-01T00:00:00Z").unix_nanos(),
+            951_868_800 * 1_000_000_000
+        );
+        assert!(t("2026-09-06T10:00:00Z").is_before(&t("2026-09-06T10:00:00.000000001Z")));
+        assert!(!t("2026-09-06T12:00:00+02:00").is_before(&t("2026-09-06T10:00:00Z")));
+        assert!(t("1969-12-31T23:59:59Z").unix_nanos() < 0);
     }
 
     #[test]

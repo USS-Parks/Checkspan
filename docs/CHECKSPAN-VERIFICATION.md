@@ -9,7 +9,7 @@ The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approva
 | Milestone | Prompts | Authorization | Implementation | Acceptance evidence |
 | --- | --- | --- | --- | --- |
 | M1 Contract explorer | CS-01–CS-07 | Approved (full STS, 2026-09-06) | Complete at ac639a4 | **Accepted 2026-09-06.** local_native Windows x64 passed; local_native Linux x64 (WSL2 Ubuntu 26.04) passed, 83 tests and identical example digests; hosted_ci passed (run 34059580357, jobs 101557584686 ubuntu-24.04 and 101557584591 windows-2025; `main` run 34059583565). Evidence: `test-evidence/checkspan/CS-07/`. |
-| M2 Durable run ledger | CS-08–CS-14 | Approved ("Run M2 STS", 2026-09-06) | CS-08–CS-10 complete; local gates passed | Hosted: recorded at CS-14 |
+| M2 Durable run ledger | CS-08–CS-14 | Approved ("Run M2 STS", 2026-09-06) | CS-08–CS-11 complete; local gates passed | Hosted: recorded at CS-14 |
 | M3 Multi-agent RAG and software pilot | CS-15–CS-24 → CS-R01–CS-R12 → CS-25 | Not approved | Not started | Not run |
 | M4 GitHub-backed evidence | CS-26–CS-31 | Not approved | Not started | Not run |
 | M5 Packaged pilot | CS-32–CS-36 | Not approved | Not started | Not run |
@@ -20,7 +20,7 @@ The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approva
 | --- | --- | --- | --- |
 | PC-01 | Unknown/duplicate ID, bad type, or cycle rejected before dispatch | CS-02–CS-06 | CS-02: duplicate node ID, unknown/foreign/mismatched target, unknown schema version rejected (`tests/contract_identity.rs`, local_native passed). CS-03: bad port/output types rejected. CS-05: oversized, deep, duplicate-key, and unsupported-header documents rejected before interpretation (`tests/document_validation.rs`, local_native passed). CS-06: cycles, unresolved/foreign/mismatched dependencies, and incompatible ports and types rejected at admission (`tests/graph_admission.rs`, local_native passed). |
 | PC-02 | Required target remains blocked after upstream failure | CS-06, CS-10–CS-12 | CS-10: a failed or rejected node stays non-accepted until an explicit `RetryAllowed` or gate decision; nothing but an admitted accept receipt reaches `accepted` (`tests/state_transitions.rs`, local_native passed). Dependency blocking pending CS-11/CS-12. |
-| PC-03 | Expired/revoked prerequisite cannot be reused | CS-11, CS-19 | Design only |
+| PC-03 | Expired/revoked prerequisite cannot be reused | CS-11, CS-19 | CS-11: expired and revoked receipts block fresh resolution and fail the pre-acceptance recheck while the historical acceptance stands (`tests/dependency_binding.rs`, local_native passed). Receipt admission pending CS-19. |
 | PC-04 | Changed candidate requires matching fresh check evidence | CS-15, CS-18, CS-29 | CS-08: result and context digests bind exact bytes and every context component (`tests/content_binding.rs`, local_native passed). Candidate capture and rechecks pending CS-15/CS-18. |
 | PC-05 | Correct result shape cannot override failed checks | CS-03, CS-18–CS-19 | CS-03: acceptance pins claim, required checks, verifier, and policy; no record or schema property can carry a status or verdict (`tests/node_contracts.rs`, local_native passed). Behavioural enforcement pending CS-18–CS-19. |
 | PC-06 | Worker cannot weaken mandatory checks during retry | CS-13, CS-18 | CS-03: `required_checks` is non-empty and part of the immutable contract; retry-time enforcement pending CS-13/CS-18. |
@@ -30,7 +30,7 @@ The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approva
 | PC-10 | Changed/stale action packet invalidates approval reuse | CS-22–CS-23 | CS-04: a decision fails to bind when the packet digest, action target, node, or offered options change (`tests/outcome_contracts.rs`, local_native passed). Expiry and signature checks pending CS-22. |
 | PC-11 | Shared resource writes serialize | CS-12, CS-17 | Design only |
 | PC-12 | Late completion cannot accept a cancelled/newer attempt | CS-12, CS-19, CS-24 | Design only |
-| PC-13 | In-graph proof inputs cannot hide dependencies | CS-06, CS-11 | CS-06: a `proofs` port naming an in-graph node without a declared dependency is rejected; external proof sources are unsupported imports (`tests/graph_admission.rs`, local_native passed). Run-scoped resolution pending CS-11. |
+| PC-13 | In-graph proof inputs cannot hide dependencies | CS-06, CS-11 | CS-06: a `proofs` port naming an in-graph node without a declared dependency is rejected; external proof sources are unsupported imports (`tests/graph_admission.rs`, local_native passed). CS-11: dependencies resolve only within the run or through an explicitly admitted import; another run's green node is invisible otherwise. |
 | PC-14 | Smaller retry claim retains the original obligation | CS-03, CS-13, CS-24 | CS-03: the obligation lives in the pinned acceptance contract, not in the attempt; retry policy cannot alter it. Runtime enforcement pending CS-13/CS-24. |
 | PC-15 | Partial target closure cannot appear complete | CS-06, CS-23 | CS-06: admission computes the required closure of every target and reports the rest as optional (`tests/graph_admission.rs`, local_native passed). Packet-level closure pending CS-23. |
 

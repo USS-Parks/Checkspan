@@ -1,0 +1,32 @@
+{
+  "record": "graph_run",
+  "schema_version": 1,
+  "run_id": "run-0003",
+  "graph_ref": {
+    "graph_id": "review_pilot",
+    "revision": 2
+  },
+  "admitted_imports": [
+    {
+      "node_id": "cs_patch",
+      "receipt": {
+        "id": "rcpt-patch-1",
+        "run_id": "run-0001",
+        "node": {
+          "graph_id": "review_pilot",
+          "node_id": "cs_patch",
+          "revision": 1
+        }
+      },
+      "result_digest": "sha256:507fffbf22626b98b9b598495dd47f546047f922c80340ba8a7f26921a486829",
+      "result_type": {
+        "schema_id": "patch_result",
+        "version": 1,
+        "digest": "sha256:966a18f2328d6a7294e79b3d02465552440fbd5298a43af907314e7c48c559b1"
+      },
+      "subject": "commit:918a8431ec8d46b19029e3ecbbb77e785b25716c",
+      "admitted_at": "2026-09-06T15:00:00Z",
+      "valid_until": "2026-10-01T00:00:00Z"
+    }
+  ]
+}

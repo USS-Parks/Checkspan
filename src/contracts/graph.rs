@@ -6,8 +6,9 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use super::ids::{GraphId, NodeId, Revision, RunId, Timestamp};
-use super::node::NodeSpec;
+use super::attempt::ReceiptRef;
+use super::ids::{Digest, GraphId, NodeId, Revision, RunId, Timestamp};
+use super::node::{NodeSpec, TypeRef};
 use super::record::{Record, RecordKind, SchemaVersion};
 
 /// Exact reference to one graph revision.
@@ -84,6 +85,28 @@ impl Record for GraphSpec {
     const SCHEMA_ID: &'static str = "https://checkspan.invalid/schemas/v1/graph-spec.schema.json";
 }
 
+/// An accepted receipt from another run, explicitly admitted to stand in for
+/// one node of this run. Nothing from another run is reused without one.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ImportedReceipt {
+    /// The node of this graph the import satisfies.
+    pub node_id: NodeId,
+    /// The receipt, in the run that issued it.
+    pub receipt: ReceiptRef,
+    /// The result digest the receipt must have checked.
+    pub result_digest: Digest,
+    /// The result type the sealed attempt must declare.
+    pub result_type: TypeRef,
+    /// What the receipt is about.
+    pub subject: String,
+    /// When the operator admitted the import.
+    pub admitted_at: Timestamp,
+    /// Moment after which the import can no longer admit fresh work.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub valid_until: Option<Timestamp>,
+}
+
 /// One execution of one graph revision.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -99,6 +122,9 @@ pub struct GraphRun {
     /// Earlier run whose consumed budget this run inherits.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub budget_lineage_ref: Option<RunId>,
+    /// Receipts from other runs admitted to stand in for nodes of this run.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub admitted_imports: Vec<ImportedReceipt>,
 }
 
 impl Record for GraphRun {
@@ -135,6 +161,10 @@ pub enum IdentityError {
     ZeroAttemptBudget,
     /// A run names itself as its own budget lineage.
     SelfLineage(RunId),
+    /// Two imports stand in for the same node.
+    DuplicateImport(NodeId),
+    /// An import names a receipt from this very run.
+    SelfImport(NodeId),
 }
 
 impl fmt::Display for IdentityError {
@@ -168,6 +198,12 @@ impl fmt::Display for IdentityError {
             }
             IdentityError::SelfLineage(r) => {
                 write!(f, "run {r} names itself as budget lineage")
+            }
+            IdentityError::DuplicateImport(n) => {
+                write!(f, "node {n} has more than one admitted import")
+            }
+            IdentityError::SelfImport(n) => {
+                write!(f, "the import for node {n} names a receipt from this run")
             }
         }
     }
@@ -250,6 +286,15 @@ impl GraphRun {
         let mut errors = Vec::new();
         if self.budget_lineage_ref.as_ref() == Some(&self.run_id) {
             errors.push(IdentityError::SelfLineage(self.run_id.clone()));
+        }
+        let mut seen = HashSet::new();
+        for import in &self.admitted_imports {
+            if !seen.insert(&import.node_id) {
+                errors.push(IdentityError::DuplicateImport(import.node_id.clone()));
+            }
+            if import.receipt.run_id == self.run_id {
+                errors.push(IdentityError::SelfImport(import.node_id.clone()));
+            }
         }
         errors
     }
