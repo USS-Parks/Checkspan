@@ -14,8 +14,8 @@
 
 **Date:** 2026-09-06.  
 **Scope authorized:** choose a new independent product name, connect the provided repository, and draft a granular PSPR for review.  
-**Status:** papers prepared; publication recorded after the initial documentation commit.  
-**Documentation commit:** PENDING_INITIAL_COMMIT
+**Status:** complete; exploration papers and draft PSPR published to main.  
+**Documentation commit:** 6bc2bb888147123c4053fff0bf4a05bf9354cf1f
 
 **Changes:** introduced Checkspan and its standalone positioning; prepared the current one-pager, schema notes, and README; retained the original v0.1 papers unchanged; drafted the 36-prompt, five-milestone PSPR and verification ledger. Added basic text/ignore conventions for the new repository.
 
@@ -30,3 +30,11 @@
 For every approved prompt, append: prompt ID and approved scope; before/source SHA; changed paths; verification commands and outcomes; native/hosted/operator evidence references; acceptance status; implementation commit; remote SHA; open blockers; storage/worktree closeout.
 
 Do not replace historical failures with a later success. Record retries and superseding evidence separately. Keep prompt acceptance separate from release authorization.
+
+## DOC-01 - Publication closeout
+
+The initial documentation commit 6bc2bb888147123c4053fff0bf4a05bf9354cf1f was pushed to origin/main and the remote SHA was verified with git ls-remote. Staged diff checking and the configured no-slop commit/push hooks passed. The 36-prompt roster and all required prompt fields were checked; internal document links resolve.
+
+The only retained worktree is the canonical working folder on main, used for this exploration and future approved work. No secondary worktree, build output, dependency tree, or unpublished implementation exists. Temporary drafting payloads remain outside the repository; no deletion was performed.
+
+CS-01 through CS-36 remain not approved and not started. This closeout changes documentation only. Review and explicit STS approval are still required.
