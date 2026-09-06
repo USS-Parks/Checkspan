@@ -14,7 +14,7 @@ The proposed first complete pilot is request + approved corpus + supplied patch 
 
 The [canonical PSPR](PLANNING/CHECKSPAN-PSPR.md) (Draft 0.2, 48 ordered prompts across five milestones) was approved for full STS on 2026-09-06. **M1, the offline contract explorer (CS-01–CS-07), is implemented**; execution stops at the M1 boundary pending Basho's M2 approval. Later milestones are unstarted.
 
-M1 gives you `checkspan validate` and `checkspan inspect`: offline validation of every record kind and admission of graphs, with no worker, run store, credentials, or network. Start with the [M1 guide](docs/CHECKSPAN-M1-GUIDE.md) and the [examples](examples/README.md).
+M1 gives you `checkspan validate` and `checkspan inspect`: offline validation of every record kind and admission of graphs, with no worker, run store, credentials, or network. Start with the [M1 guide](docs/CHECKSPAN-M1-GUIDE.md) and the [examples](examples/README.md). M2 (CS-08–CS-14) adds the durable run ledger as library code: content digests, the SQLite store, the state reducer, run-scoped dependencies and imports, fenced claims, and persistent budgets; the [M2 guide](docs/CHECKSPAN-M2-GUIDE.md) explains recovery.
 
 ```bash
 cargo build --release --locked && target/release/checkspan inspect examples/graphs/review-pilot.json
