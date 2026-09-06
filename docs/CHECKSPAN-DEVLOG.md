@@ -7,7 +7,8 @@
 - Repository: [USS-Parks/Checkspan](https://github.com/USS-Parks/Checkspan).
 - Implementation authorization: **full STS approved by Basho on 2026-09-06** ("Approved for full STS now"). Execution proceeds sequentially and halts at every explicit stop in PSPR §0.3; the first stop is the M1 boundary after CS-07.
 - Implementation branch: `codex/checkspan-m1`. Per Basho's instruction of 2026-09-06, every completed prompt is committed on that branch, fast-forwarded into `main`, and both refs are pushed.
-- Current prompt: **CS-07 complete. M1 (CS-01–CS-07) is accepted on native Windows, native Linux, and the hosted matrix. Execution is STOPPED at the M1 milestone boundary pending Basho's explicit M2 approval; CS-08 is not started.**
+- M2 authorization: **"Run M2 STS" received from Basho on 2026-09-06** after the M1 report; CS-08 through CS-14 are authorized, with the M2 boundary (after CS-14) as the next explicit stop. Basho reiterated: commit and merge to `main` after every prompt.
+- Current prompt: **CS-08 complete; CS-09 next.**
 - Implemented product behavior: `checkspan validate <file>` and `checkspan inspect <file>` over any supported record, with graph admission (dependency resolution, port and type compatibility, cycles, hidden proof dependencies, external imports, gate wait chains, target closure, deterministic order) for graph documents; stable JSON output and exit codes; no dispatch, run store, or writes.
 
 ## DOC-00 — Name, repository wiring, and review draft
@@ -242,3 +243,30 @@ Draft 0.1 parked RAG ingestion, model execution, and parallel workers. Draft 0.2
 No git worktree other than the canonical checkout is registered (`git worktree list`). No unpublished commits: `codex/checkspan-m1` and `main` both point at the CS-07 closeout commit after this entry is pushed. Generated fixtures and examples are committed source; scratch generators and evidence scripts used during the session live outside the repository except `run-examples.sh`, which is committed as evidence tooling.
 
 **Acceptance:** M1 accepted with native Windows, native Linux, and hosted evidence on ac639a4d…. **Execution stops here.** CS-08 (M2) requires Basho's explicit approval; nothing in this entry, in elapsed time, or in the earlier full-STS instruction substitutes for that stop, because the milestone boundary is an explicit stop in the approved PSPR.
+
+## CS-08 — Bind immutable snapshots and canonical digests
+
+**Date:** 2026-09-06.  
+**Approved scope:** M2 STS (Basho, 2026-09-06).  
+**Source SHA before work:** c9ef350e016deb0b06cb45b2cb294cff3854b9fa (CS-07 closeout; `main`).  
+
+**Changed paths:** `src/digests/mod.rs` (new); `src/lib.rs`; `src/contracts/ids.rs` (`Digest::from_sha256`); `Cargo.toml`, `Cargo.lock` (`sha2`, `serde_json_canonicalizer`); `tests/content_binding.rs` (new); `tests/fixtures/canonical/` (two RFC 8785 vectors, one Python cross-check set); this log; the verification ledger; the dependency record.
+
+**Design as implemented:** `artifact_digest(bytes)` is SHA-256 of exact bytes. Envelope digests are RFC 8785 canonical bytes hashed with SHA-256; `envelope_bytes` first rejects any number that is not an integer within ±2^53 (floats and larger integers would be reformatted as doubles), reporting the JSON pointer, and `envelope_digest_from_text` runs the strict parser first so duplicate keys, excess depth, and trailing content reject before anything is hashed. `jcs_bytes` exposes the raw RFC 8785 layer for conformance. Typed digests go through `digest_of(kind, body)`, which hashes `{algorithm: "jcs-sha256@1", kind, body}` so the algorithm version and the envelope kind are part of the bytes: `graph_spec_digest`, `node_spec_digest`, `input_manifest_digest` (evidence ordered by port name and receipts by id, so assembly order does not matter), and `context_digest` over a `VerificationContext` of attempt, full node contract, input-manifest digest, dependency receipts, result digest, and produced evidence. Revision immutability is a store rule for CS-09: a `(graph_id, revision)` is bound to its `graph_spec_digest` and cannot be stored again with a different one.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed |
+| `cargo test --locked` | passed: 92 tests (83 prior + 9 content binding) |
+| `cargo deny check` | advisories, bans, licenses, sources ok |
+| `cargo audit` | no advisories against 105 lockfile entries |
+
+**Gate evidence (V1/V2):** the RFC 8785 section 3.2.2 example and section 3.2.3 sorting example canonicalize byte-for-byte to the RFC's expected output, and the section 3.2.2 example also matches the hex form printed in the RFC; six independently generated Python vectors (nested structures, escapes, control characters, DEL, BMP Unicode, safe-integer extremes, array root, a graph-run record) match on canonical bytes and SHA-256; SHA-256 known answers for `abc` and the empty input match; a reordered and reformatted document has the same envelope digest as its compact form while six semantic mutations (value, order inside an array, string case, type, removed key, string-vs-number) all change it; graph and node digests survive a serialization round trip, change when a display name or a prompt changes while `GraphRef` identity does not, and the same body under a different envelope kind has a different digest; duplicate keys at the root and nested reject with the key's path before hashing; floats, `-0.0`, `1e30`, 2^53+1, -(2^53+1), and `u64::MAX` reject with their path while 2^53, -2^53, 0, and -1 are accepted, and the raw JCS layer still canonicalizes floats; the input-manifest digest is identical across assembly orders and changes with content or membership; the verification-context digest is deterministic and changes when the attempt, contract, inputs digest, result digest, produced evidence, dependency receipts, or envelope kind change.
+
+**Not claimed:** storage of digests or revision immutability enforcement (CS-09); hosted matrix for this commit (queued on push; recorded at CS-14).
+
+**Acceptance:** CS-08 gate passed locally. Implementation commit SHA is recorded in the CS-09 entry.  
+**Open blockers:** none.

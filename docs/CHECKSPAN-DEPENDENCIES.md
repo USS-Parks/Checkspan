@@ -23,6 +23,8 @@ Lints: `unsafe_code = "forbid"` package-wide; `missing_docs = "warn"` on the lib
 | `clap` (features: `derive`) | 4.6.6 | MIT OR Apache-2.0 | Command-line parsing with generated help/version and stable exit codes | Hand-rolled argument parsing (rejected: help, errors, and exit-code conventions would be re-implemented), `argh`/`lexopt` (smaller, but the PSPR names `clap` and its derive API keeps subcommands declarative) | CS-01 |
 | `serde` (features: `derive`) | 1.0.229 | MIT OR Apache-2.0 | Typed contract records with `deny_unknown_fields` and `try_from` newtypes | Hand-written JSON mapping (rejected: every record would repeat the same strictness code) | CS-02 |
 | `serde_json` | 1.0.151 | MIT OR Apache-2.0 | JSON parsing to `Value` for header-first record dispatch, then typed deserialization | `json` crate (rejected: no serde integration) | CS-02 |
+| `sha2` | 0.11.0 | MIT OR Apache-2.0 | SHA-256 for artifact bytes and canonical envelopes (RustCrypto) | `ring` (rejected: far larger, C/asm build), a hand-written hash (never) | CS-08 |
+| `serde_json_canonicalizer` | 0.3.2 | MIT | RFC 8785 JSON Canonicalization Scheme for envelope digests; ships the RFC text vectors and ES6 number formatting via `ryu-js` | `serde_jcs` 0.2.0 (equally current; not chosen because the canonicalizer's conformance tests are the more direct evidence), `json-canon` 0.1.3 (older) | CS-08 |
 | `jsonschema` (`default-features = false`) | 0.54.0 | MIT | Draft 2020-12 validation against the bundled schemas; no HTTP, file, or TLS resolver is compiled in, and every `$ref` is served by the in-crate bundled retriever | `boon` (rejected: smaller ecosystem; `jsonschema` is the PSPR default). Added as a dev-dependency in CS-02; promoted to a runtime dependency in CS-05. | CS-02, CS-05 |
 
 Transitive closure at CS-02: 90 crates (`cargo tree --edges normal,dev`), all MIT, Apache-2.0, Unicode-3.0, or Unlicense-OR-MIT (`cargo deny check licenses`). `cargo audit`: no advisories. No git or non-crates.io sources.
@@ -34,6 +36,8 @@ CS-05: `jsonschema` promoted from dev-dependency to runtime dependency (same ver
 CS-06: no dependency change. `autoexamples = false` is set because `examples/` holds JSON documents for the CLI rather than Rust example binaries.
 
 CS-07: no dependency change. Native Linux acceptance used the same pinned toolchain, installed by `rustup toolchain install` from `rust-toolchain.toml` inside WSL2 Ubuntu 26.04 (rustup 1.29.1).
+
+CS-08: adds `sha2` and `serde_json_canonicalizer` (both published within the last six months; 105 lockfile entries after the change; new transitive crates `ryu-js`, `digest`, `block-buffer`, `hybrid-array`, `typenum`, `const-oid`, `crypto-common`, `cfg-if`, `cpufeatures`). `cargo deny check` and `cargo audit` pass. `tests/fixtures/canonical/rfc_*.json` reproduce the examples in RFC 8785 sections 3.2.2 and 3.2.3 as shipped in the canonicalizer's test resources; `crosscheck.json` is generated independently with Python's `json.dumps` and `hashlib`.
 
 Schema `$id`s use `https://checkspan.invalid/schemas/v1/`. `.invalid` is reserved by RFC 2606 and never resolves, which makes the IDs identifiers rather than fetchable locations; the bundled registry is the only source of schema text. Changing the ID base is a schema-version change.
 

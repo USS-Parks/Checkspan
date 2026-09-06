@@ -9,7 +9,7 @@ The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approva
 | Milestone | Prompts | Authorization | Implementation | Acceptance evidence |
 | --- | --- | --- | --- | --- |
 | M1 Contract explorer | CS-01–CS-07 | Approved (full STS, 2026-09-06) | Complete at ac639a4 | **Accepted 2026-09-06.** local_native Windows x64 passed; local_native Linux x64 (WSL2 Ubuntu 26.04) passed, 83 tests and identical example digests; hosted_ci passed (run 34059580357, jobs 101557584686 ubuntu-24.04 and 101557584591 windows-2025; `main` run 34059583565). Evidence: `test-evidence/checkspan/CS-07/`. |
-| M2 Durable run ledger | CS-08–CS-14 | Awaiting Basho's explicit M2 approval (milestone stop) | Not started | Not run |
+| M2 Durable run ledger | CS-08–CS-14 | Approved ("Run M2 STS", 2026-09-06) | CS-08 complete; local gates passed | Hosted: recorded at CS-14 |
 | M3 Multi-agent RAG and software pilot | CS-15–CS-24 → CS-R01–CS-R12 → CS-25 | Not approved | Not started | Not run |
 | M4 GitHub-backed evidence | CS-26–CS-31 | Not approved | Not started | Not run |
 | M5 Packaged pilot | CS-32–CS-36 | Not approved | Not started | Not run |
@@ -21,7 +21,7 @@ The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approva
 | PC-01 | Unknown/duplicate ID, bad type, or cycle rejected before dispatch | CS-02–CS-06 | CS-02: duplicate node ID, unknown/foreign/mismatched target, unknown schema version rejected (`tests/contract_identity.rs`, local_native passed). CS-03: bad port/output types rejected. CS-05: oversized, deep, duplicate-key, and unsupported-header documents rejected before interpretation (`tests/document_validation.rs`, local_native passed). CS-06: cycles, unresolved/foreign/mismatched dependencies, and incompatible ports and types rejected at admission (`tests/graph_admission.rs`, local_native passed). |
 | PC-02 | Required target remains blocked after upstream failure | CS-06, CS-10–CS-12 | Design only |
 | PC-03 | Expired/revoked prerequisite cannot be reused | CS-11, CS-19 | Design only |
-| PC-04 | Changed candidate requires matching fresh check evidence | CS-15, CS-18, CS-29 | Design only |
+| PC-04 | Changed candidate requires matching fresh check evidence | CS-15, CS-18, CS-29 | CS-08: result and context digests bind exact bytes and every context component (`tests/content_binding.rs`, local_native passed). Candidate capture and rechecks pending CS-15/CS-18. |
 | PC-05 | Correct result shape cannot override failed checks | CS-03, CS-18–CS-19 | CS-03: acceptance pins claim, required checks, verifier, and policy; no record or schema property can carry a status or verdict (`tests/node_contracts.rs`, local_native passed). Behavioural enforcement pending CS-18–CS-19. |
 | PC-06 | Worker cannot weaken mandatory checks during retry | CS-13, CS-18 | CS-03: `required_checks` is non-empty and part of the immutable contract; retry-time enforcement pending CS-13/CS-18. |
 | PC-07 | Checker crash/unavailable CI produces operational failure | CS-17, CS-20, CS-26 | CS-04: `failed`/`timed_out`/`cancelled` are execution outcomes disjoint from verdicts; none can parse as a verdict (`tests/outcome_contracts.rs`, local_native passed). Live process behaviour pending CS-17/CS-20. |

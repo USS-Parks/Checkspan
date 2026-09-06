@@ -1,0 +1,96 @@
+{
+  "generator": "python json.dumps(sort_keys=True, separators=(',', ':'), ensure_ascii=False) and hashlib.sha256; BMP-only keys so code-point order equals UTF-16 order",
+  "cases": [
+    {
+      "name": "flat",
+      "input": {
+        "b": 2,
+        "a": 1,
+        "c": [
+          3,
+          2,
+          1
+        ]
+      },
+      "canonical": "{\"a\":1,\"b\":2,\"c\":[3,2,1]}",
+      "sha256": "cd36c2304f25be8bf976e83b14aacc918fdba619bfdb88195e3c14f48cd54ce6"
+    },
+    {
+      "name": "nested",
+      "input": {
+        "z": {
+          "y": {
+            "x": [
+              null,
+              true,
+              false,
+              "s"
+            ]
+          }
+        },
+        "a": {
+          "b": {
+            "c": 0
+          }
+        }
+      },
+      "canonical": "{\"a\":{\"b\":{\"c\":0}},\"z\":{\"y\":{\"x\":[null,true,false,\"s\"]}}}",
+      "sha256": "dd07e6d9fcdc428142bab9301d7928e14542f6e05fa89dfb77c6caaf49c1b2a9"
+    },
+    {
+      "name": "strings",
+      "input": {
+        "plain": "abc",
+        "slash": "a/b",
+        "quote": "say \"hi\"",
+        "backslash": "a\\b",
+        "controls": "\u0001 \n\r\t\b\f \u001f",
+        "del": "\u007f",
+        "bmp": "\u00e9\u20ac\ufb33",
+        "empty": ""
+      },
+      "canonical": "{\"backslash\":\"a\\\\b\",\"bmp\":\"\u00e9\u20ac\ufb33\",\"controls\":\"\\u0001 \\n\\r\\t\\b\\f \\u001f\",\"del\":\"\u007f\",\"empty\":\"\",\"plain\":\"abc\",\"quote\":\"say \\\"hi\\\"\",\"slash\":\"a/b\"}",
+      "sha256": "713bd8a2ae8fcda7d40ffcde85b1687cbab8192e665421bffc14b3170c3a1ad6"
+    },
+    {
+      "name": "integers",
+      "input": {
+        "zero": 0,
+        "neg": -1,
+        "big": 9007199254740992,
+        "negbig": -9007199254740992,
+        "small": 42
+      },
+      "canonical": "{\"big\":9007199254740992,\"neg\":-1,\"negbig\":-9007199254740992,\"small\":42,\"zero\":0}",
+      "sha256": "bd2341985e703e7b7f6d5c724c04d6779615cf000f866c25d77c2675c90532b0"
+    },
+    {
+      "name": "array_root",
+      "input": [
+        {
+          "k": "v"
+        },
+        [],
+        {},
+        "",
+        0
+      ],
+      "canonical": "[{\"k\":\"v\"},[],{},\"\",0]",
+      "sha256": "0dff45a78ae0034cb4af3746fc44f557dae1414532f921ee3a9903e0c6dd5682"
+    },
+    {
+      "name": "record",
+      "input": {
+        "record": "graph_run",
+        "schema_version": 1,
+        "run_id": "run-0001",
+        "graph_ref": {
+          "revision": 1,
+          "graph_id": "review_pilot"
+        }
+      },
+      "canonical": "{\"graph_ref\":{\"graph_id\":\"review_pilot\",\"revision\":1},\"record\":\"graph_run\",\"run_id\":\"run-0001\",\"schema_version\":1}",
+      "sha256": "9cb2a0c12941384e3b5dcb89172ca8aa75806a653e30f5f49865a5f7b048a7a3"
+    }
+  ]
+}

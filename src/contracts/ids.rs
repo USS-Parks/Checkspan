@@ -192,6 +192,16 @@ impl Digest {
     pub fn as_str(&self) -> &str {
         &self.0
     }
+
+    /// Build a digest from raw SHA-256 output.
+    pub fn from_sha256(hash: &[u8; 32]) -> Self {
+        let mut text = String::with_capacity(7 + 64);
+        text.push_str("sha256:");
+        for byte in hash {
+            text.push_str(&format!("{byte:02x}"));
+        }
+        Self(text)
+    }
 }
 
 impl TryFrom<String> for Digest {
