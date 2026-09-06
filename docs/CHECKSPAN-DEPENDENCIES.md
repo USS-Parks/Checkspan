@@ -33,6 +33,8 @@ CS-05: `jsonschema` promoted from dev-dependency to runtime dependency (same ver
 
 CS-06: no dependency change. `autoexamples = false` is set because `examples/` holds JSON documents for the CLI rather than Rust example binaries.
 
+CS-07: no dependency change. Native Linux acceptance used the same pinned toolchain, installed by `rustup toolchain install` from `rust-toolchain.toml` inside WSL2 Ubuntu 26.04 (rustup 1.29.1).
+
 Schema `$id`s use `https://checkspan.invalid/schemas/v1/`. `.invalid` is reserved by RFC 2606 and never resolves, which makes the IDs identifiers rather than fetchable locations; the bundled registry is the only source of schema text. Changing the ID base is a schema-version change.
 
 ## Verification tooling

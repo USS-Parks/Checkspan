@@ -1,0 +1,32 @@
+binary: ./target/release/checkspan.exe
+version: checkspan 0.1.0
+commit: ac639a4d68bc9e2553af26acc189d8d4c45a99b6
+tree-clean: yes
+platform: MINGW64_NT-10.0-26200 3.6.7-fb42d713.x86_64 x86_64
+validate examples/graphs/research-pilot.json exit=0 "valid": true stage=none sha256=e7610b067ad6175e13212431df5dfc6495ff689a7b701993996f3cdac16dffff
+inspect examples/graphs/research-pilot.json exit=0 "valid": true stage=none sha256=590cadfc27a006cc34958121e814764f6369141d8a6960b805ca701ab468ba56
+validate examples/graphs/review-pilot.json exit=0 "valid": true stage=none sha256=d3ea26bc3c457f7562481724f47fc0b170192f873eb6a987ff8a8372fb4b96b6
+inspect examples/graphs/review-pilot.json exit=0 "valid": true stage=none sha256=96143f64811f1166558d8f4722f46388510cc60f9943476a883f752510208880
+validate examples/records/graph-run.json exit=0 "valid": true stage=none sha256=91bc50a7f42d3fc5726604d2f193fe6018c54ffe097401891642494a26fd3f80
+inspect examples/records/graph-run.json exit=0 "valid": true stage=none sha256=013ebb9a91ef5a54e8c87abef4e043c8f199d1b0e261d3bc56ba29e41c1684eb
+validate examples/invalid/bad-identifier.json exit=1 "valid": false "stage": "schema" sha256=2feaca4419b6bf7ca107dd438c609ee4cf1197e6aeaf8aa3acff7cc2ea5ed658
+inspect examples/invalid/bad-identifier.json exit=1 "valid": false "stage": "schema" sha256=1cdf570f7a89febbcb6f0f4ab08254aadf360437f72ead8ad575acaab3ad72f8
+validate examples/invalid/cycle.json exit=1 "valid": false "stage": "admission" sha256=2ac09a654dd6b6ecbea958bc1049f365cd09f5fab69877c560ed49871ab5110c
+inspect examples/invalid/cycle.json exit=1 "valid": false "stage": "admission" sha256=496b652834747e46ebafe43a5b6da966c66302a6e8a9eac85748bceaf06a65f3
+validate examples/invalid/duplicate-key.json exit=1 "valid": false "stage": "duplicate_key" sha256=a83df92c2ec55426589b9ac17e6913d495311f58d92b00b96dc3f64326712683
+inspect examples/invalid/duplicate-key.json exit=1 "valid": false "stage": "duplicate_key" sha256=d659671fa418d72d5fc93c10a4b170bbe04193f08d88669518920fb45ac60578
+validate examples/invalid/external-import.json exit=1 "valid": false "stage": "admission" sha256=32c160fa2c5e430e46d757065e7df5a7546681d96d654673060631867f5fedf2
+inspect examples/invalid/external-import.json exit=1 "valid": false "stage": "admission" sha256=9285d31dd3d604203ec48248716d608e38ad103f67bb3ac8fae5f4d7ba9ab900
+validate examples/invalid/gate-wait-cycle.json exit=1 "valid": false "stage": "admission" sha256=8f6d2ba919cc11ee326620e6a9026625cc8f09a0f97bbf32d9f4bb8337ad6e43
+inspect examples/invalid/gate-wait-cycle.json exit=1 "valid": false "stage": "admission" sha256=93274f92bc8f2b5e097413cf0b0608702cc815336f193f14fd51f4c25d8024c0
+validate examples/invalid/hidden-proof-dependency.json exit=1 "valid": false "stage": "admission" sha256=8f366ed201ad3f430d459fd48a44f569679b4f8476d0b0e11dc04a90e870cd5f
+inspect examples/invalid/hidden-proof-dependency.json exit=1 "valid": false "stage": "admission" sha256=945a4aa4c29464b5cf7bba5ec78a5dd9c7cc7f977d0e36e42fac3cd6bd79f96e
+validate examples/invalid/incompatible-type.json exit=1 "valid": false "stage": "admission" sha256=5342187469042c675c9fca96d257b16f2882ee54683a53164fa69079d4ad52f8
+inspect examples/invalid/incompatible-type.json exit=1 "valid": false "stage": "admission" sha256=c0b0f604e8c808a83eec5e05c3b7633118c6c515d3dcbd3fa3547c378370981e
+validate examples/invalid/unknown-version.json exit=1 "valid": false "stage": "header" sha256=c28b497ed0b45340aab026ca5065309df55a15d2d1794677860165fc9af9c23f
+inspect examples/invalid/unknown-version.json exit=1 "valid": false "stage": "header" sha256=b3e1651db60af78fb5761c68c09197be1fa71dfd046288123ea524b1fc24f215
+validate examples/invalid/unresolved-dependency.json exit=1 "valid": false "stage": "admission" sha256=f4c883e5e3ab23383cddf193cb749dba9fde6ea9dcb11c39332031d7b77086cf
+inspect examples/invalid/unresolved-dependency.json exit=1 "valid": false "stage": "admission" sha256=ac614d70ce37bb99f2718aeff9290ae0a1a7f591a583eb701f6a45c21229822b
+validate examples/does-not-exist.json exit=3
+no-arguments exit=2
+unknown-flag exit=2

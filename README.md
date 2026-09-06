@@ -10,16 +10,23 @@ The proposed first complete pilot is request + approved corpus + supplied patch 
 
 **Repository:** [USS-Parks/Checkspan](https://github.com/USS-Parks/Checkspan)
 
-## Review and approval
+## Status
 
-The [canonical PSPR](PLANNING/CHECKSPAN-PSPR.md) is **Draft 0.2 for review: 48 ordered prompts across five independently approvable milestones**. All implementation prompts are unstarted and unapproved. The proposed first approval is **M1: the offline contract explorer**.
+The [canonical PSPR](PLANNING/CHECKSPAN-PSPR.md) (Draft 0.2, 48 ordered prompts across five milestones) was approved for full STS on 2026-09-06. **M1, the offline contract explorer (CS-01–CS-07), is implemented**; execution stops at the M1 boundary pending Basho's M2 approval. Later milestones are unstarted.
+
+M1 gives you `checkspan validate` and `checkspan inspect`: offline validation of every record kind and admission of graphs, with no worker, run store, credentials, or network. Start with the [M1 guide](docs/CHECKSPAN-M1-GUIDE.md) and the [examples](examples/README.md).
+
+```bash
+cargo build --release --locked && target/release/checkspan inspect examples/graphs/review-pilot.json
+```
 
 - [Development log](docs/CHECKSPAN-DEVLOG.md)
 - [Verification ledger](docs/CHECKSPAN-VERIFICATION.md)
+- [Dependency and toolchain record](docs/CHECKSPAN-DEPENDENCIES.md)
 
 The original CS-01–CS-36 IDs remain stable. CS-R01–CS-R12 add corpus admission, real model-backed roles, bounded research concurrency, grounding checks, and evaluation before M3 acceptance at CS-25.
 
-Rust is the proposed core/CLI language. The PSPR records the complete stack recommendation and override points; it is not an already-approved implementation choice.
+The core and CLI are Rust (toolchain pinned in `rust-toolchain.toml`); schemas are JSON Schema Draft 2020-12 bundled into the binary.
 
 ## Current papers
 

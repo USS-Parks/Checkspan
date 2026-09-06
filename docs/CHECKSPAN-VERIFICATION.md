@@ -1,6 +1,6 @@
 # Checkspan — verification ledger
 
-**State:** M1 in progress on `codex/checkspan-m1`, 2026-09-06. Full STS approved by Basho on 2026-09-06; execution halts at each explicit stop. **No native runtime, retrieval, model/agent, evaluation, hosted CI, operator-signature, or release gate has run.**
+**State:** M1 accepted on 2026-09-06 at ac639a4d68bc9e2553af26acc189d8d4c45a99b6 (native Windows, native Linux, hosted matrix); execution stopped at the M1 boundary pending M2 approval. Full STS approved by Basho on 2026-09-06; execution halts at each explicit stop. **No runtime, retrieval, model/agent, evaluation, operator-signature, or release gate has run; M2–M5 are not started.**
 
 The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approval scope. Document review is not product acceptance.
 
@@ -8,8 +8,8 @@ The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approva
 
 | Milestone | Prompts | Authorization | Implementation | Acceptance evidence |
 | --- | --- | --- | --- | --- |
-| M1 Contract explorer | CS-01–CS-07 | Approved (full STS, 2026-09-06) | CS-01–CS-06 complete; local gates passed | CS-01 SHA 0930294: hosted_ci passed (run 34056847082, ubuntu-24.04 + windows-2025); M1 hosted acceptance recorded at CS-07 |
-| M2 Durable run ledger | CS-08–CS-14 | Not approved | Not started | Not run |
+| M1 Contract explorer | CS-01–CS-07 | Approved (full STS, 2026-09-06) | Complete at ac639a4 | **Accepted 2026-09-06.** local_native Windows x64 passed; local_native Linux x64 (WSL2 Ubuntu 26.04) passed, 83 tests and identical example digests; hosted_ci passed (run 34059580357, jobs 101557584686 ubuntu-24.04 and 101557584591 windows-2025; `main` run 34059583565). Evidence: `test-evidence/checkspan/CS-07/`. |
+| M2 Durable run ledger | CS-08–CS-14 | Awaiting Basho's explicit M2 approval (milestone stop) | Not started | Not run |
 | M3 Multi-agent RAG and software pilot | CS-15–CS-24 → CS-R01–CS-R12 → CS-25 | Not approved | Not started | Not run |
 | M4 GitHub-backed evidence | CS-26–CS-31 | Not approved | Not started | Not run |
 | M5 Packaged pilot | CS-32–CS-36 | Not approved | Not started | Not run |
@@ -63,6 +63,17 @@ Use explicit evidence classes: `document_review`, `parser_fixture`, `local_nativ
 
 Retain shareable metadata. Do not commit private signing keys, credentials, private customer content, unredacted logs, or generated build trees. Generated binary artifacts belong in the approved artifact/release channel, with checksums and source bindings in the ledger.
 
+## M1 acceptance evidence
+
+| Class | Environment | Source SHA | Result | Reference |
+| --- | --- | --- | --- | --- |
+| local_native | Windows 11 x64, rustc 1.98.0 | ac639a4d… | passed | `test-evidence/checkspan/CS-07/windows-x64.txt` |
+| local_native | Linux x64 (WSL2 Ubuntu 26.04), rustc 1.98.0 | ac639a4d… | passed | `test-evidence/checkspan/CS-07/linux-x64.txt`, `linux-x64-build.log` |
+| hosted_ci | GitHub Actions ubuntu-24.04 + windows-2025 | ac639a4d… | passed | run 34059580357 (jobs 101557584686, 101557584591); `main` run 34059583565 |
+| hosted_ci | Every earlier M1 commit | 0930294, 918a843, abe323d, 3eecbf0, f7faf41 | passed | runs 34056847082, 34057533885, 34058130081, 34058737149, 34059107159 |
+
+M1 establishes offline validation and admission only. The V3–V11 gates have not run; parser and fixture evidence in M1 does not close any process, storage, credential, retrieval, model, signature, or packaging claim.
+
 ## Draft-only checks
 
-The current review checks document consistency and the completeness of the roster. It does not verify any future command, test, cryptographic integration, process boundary, or runtime behavior.
+Before M1, the review checked document consistency and the completeness of the roster only. Prompts after CS-07 remain unverified until their own gates run.
