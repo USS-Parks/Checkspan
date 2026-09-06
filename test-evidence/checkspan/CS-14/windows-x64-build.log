@@ -1,0 +1,48 @@
+commit: cb63a14daf5f48476de58dc856283d67e96d9ab1
+tree-clean: yes
+platform: MINGW64_NT-10.0-26200 3.6.7-fb42d713.x86_64 x86_64
+toolchain: rustc 1.98.0 (88d9e12ae 2026-08-18) / cargo 1.98.0 (797e8a9bc 2026-08-05)
+=== fmt
+fmt: passed
+=== clippy
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.45s
+=== test
+     Running unittests src\lib.rs (target\debug\deps\checkspan-132e8c0c2aca6b80.exe)
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running unittests src\main.rs (target\debug\deps\checkspan-198dd3b1ea9f9865.exe)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests\claim_ownership.rs (target\debug\deps\claim_ownership-b6ab204055e52eaf.exe)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+     Running tests\cli_commands.rs (target\debug\deps\cli_commands-73a1562e3cfd2623.exe)
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s
+     Running tests\cli_smoke.rs (target\debug\deps\cli_smoke-85d2016d2460c4b8.exe)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests\content_binding.rs (target\debug\deps\content_binding-ab58e5d55abdd068.exe)
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests\contract_identity.rs (target\debug\deps\contract_identity-aa852aff34e61bfc.exe)
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+     Running tests\dependency_binding.rs (target\debug\deps\dependency_binding-3af11a8a94cb28cc.exe)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+     Running tests\document_validation.rs (target\debug\deps\document_validation-08e62094523d1e36.exe)
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+     Running tests\durable_recovery.rs (target\debug\deps\durable_recovery-bcd4346d6def659c.exe)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+     Running tests\graph_admission.rs (target\debug\deps\graph_admission-bc9fcf847434a3d9.exe)
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests\node_contracts.rs (target\debug\deps\node_contracts-28dd86feecbbef14.exe)
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+     Running tests\outcome_contracts.rs (target\debug\deps\outcome_contracts-c7263af68d8a5560.exe)
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+     Running tests\retry_budget.rs (target\debug\deps\retry_budget-a96746aa0f87349a.exe)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+     Running tests\state_transitions.rs (target\debug\deps\state_transitions-24cc0334d64182ea.exe)
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+     Running tests\store_transactions.rs (target\debug\deps\store_transactions-c72fc1d94911998a.exe)
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+=== durable recovery with evidence
+test child_holds_a_claim_transaction_until_killed ... ok
+test claims_counters_and_fencing_survive_a_restart ... ok
+test waiting_failed_gated_accepted_and_cancelled_runs_replay_the_same_after_reopen ... ok
+test a_controller_killed_mid_transaction_leaves_no_partial_claim ... ok
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s

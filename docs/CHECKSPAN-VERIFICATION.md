@@ -1,6 +1,6 @@
 # Checkspan — verification ledger
 
-**State:** M1 accepted on 2026-09-06 at ac639a4d68bc9e2553af26acc189d8d4c45a99b6 (native Windows, native Linux, hosted matrix); execution stopped at the M1 boundary pending M2 approval. Full STS approved by Basho on 2026-09-06; execution halts at each explicit stop. **No runtime, retrieval, model/agent, evaluation, operator-signature, or release gate has run; M2–M5 are not started.**
+**State:** M1 accepted at ac639a4 (native Windows, native Linux, hosted); M2 accepted on native Windows and native Linux at cb63a14daf5f48476de58dc856283d67e96d9ab1 and the hosted matrix (run 34064484446) on 2026-09-06; execution stopped at the M2 boundary pending M3 approval. Full STS approved by Basho on 2026-09-06; execution halts at each explicit stop. **No verifier execution, retrieval, model/agent, evaluation, operator-signature, or release gate has run; M3–M5 are not started.**
 
 The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approval scope. Document review is not product acceptance.
 
@@ -9,8 +9,8 @@ The [PSPR](../PLANNING/CHECKSPAN-PSPR.md) defines the required gates and approva
 | Milestone | Prompts | Authorization | Implementation | Acceptance evidence |
 | --- | --- | --- | --- | --- |
 | M1 Contract explorer | CS-01–CS-07 | Approved (full STS, 2026-09-06) | Complete at ac639a4 | **Accepted 2026-09-06.** local_native Windows x64 passed; local_native Linux x64 (WSL2 Ubuntu 26.04) passed, 83 tests and identical example digests; hosted_ci passed (run 34059580357, jobs 101557584686 ubuntu-24.04 and 101557584591 windows-2025; `main` run 34059583565). Evidence: `test-evidence/checkspan/CS-07/`. |
-| M2 Durable run ledger | CS-08–CS-14 | Approved ("Run M2 STS", 2026-09-06) | CS-08–CS-13 complete; local gates passed | Hosted: recorded at CS-14 |
-| M3 Multi-agent RAG and software pilot | CS-15–CS-24 → CS-R01–CS-R12 → CS-25 | Not approved | Not started | Not run |
+| M2 Durable run ledger | CS-08–CS-14 | Approved ("Run M2 STS", 2026-09-06) | Complete at cb63a14 | **Accepted 2026-09-06.** local_native Windows x64 passed; local_native Linux x64 (WSL2 Ubuntu 26.04) passed, 142 tests, identical inspection output; hosted_ci run 34064484446 passed (ubuntu-24.04, windows-2025) and `main` run 34064487105 passed; every earlier M2 commit passed the matrix. Evidence: `test-evidence/checkspan/CS-14/`. |
+| M3 Multi-agent RAG and software pilot | CS-15–CS-24 → CS-R01–CS-R12 → CS-25 | Awaiting Basho's explicit M3 approval (milestone stop) | Not started | Not run |
 | M4 GitHub-backed evidence | CS-26–CS-31 | Not approved | Not started | Not run |
 | M5 Packaged pilot | CS-32–CS-36 | Not approved | Not started | Not run |
 
@@ -62,6 +62,17 @@ Record agent/role/attempt identities, actual model/runtime/adapter identity assu
 Use explicit evidence classes: `document_review`, `parser_fixture`, `local_native`, `live_retrieval`, `live_model`, `human_labelled_evaluation`, `hosted_ci`, `signed_operator`, and `packaged_native`. Use explicit outcomes: `not_run`, `blocked`, `failed`, `passed`. A link, mock, or queued run is not a pass.
 
 Retain shareable metadata. Do not commit private signing keys, credentials, private customer content, unredacted logs, or generated build trees. Generated binary artifacts belong in the approved artifact/release channel, with checksums and source bindings in the ledger.
+
+## M2 acceptance evidence
+
+| Class | Environment | Source SHA | Result | Reference |
+| --- | --- | --- | --- | --- |
+| local_native | Windows 11 x64, rustc 1.98.0 | cb63a14d… | passed (142 tests; recovery suite with real killed and competing processes) | `test-evidence/checkspan/CS-14/windows-*` |
+| local_native | Linux x64 (WSL2 Ubuntu 26.04), rustc 1.98.0 | cb63a14d… | passed (142 tests; inspection identical to Windows) | `test-evidence/checkspan/CS-14/linux-*` |
+| hosted_ci | GitHub Actions ubuntu-24.04 + windows-2025 | cb63a14d… | passed | run 34064484446 (jobs 101570884569, 101570884404); `main` run 34064487105 |
+| hosted_ci | Every earlier M2 commit | d36e2de, 18247cc, 4ce7a90, d55a50d, 306989a, 49c0d60 | passed | runs 34062341691, 34062626189, 34062922932, 34063343474, 34063899536, 34064253801 |
+
+M2 establishes the durable ledger, reducer, dependency resolution, fenced claims, and budgets as library code exercised by real SQLite files and real processes. V4–V11 have not run; nothing executes a verifier, resolves evidence, calls a model, checks a signature, or packages a release.
 
 ## M1 acceptance evidence
 

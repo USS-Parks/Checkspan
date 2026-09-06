@@ -1,0 +1,35 @@
+=== 2026-09-06T22:37:04Z start
+checked out: cb63a14daf5f48476de58dc856283d67e96d9ab1
+info: checking for self-update (current version: 1.29.1)
+cargo 1.98.0 (797e8a9bc 2026-08-05)
+rustc 1.98.0 (88d9e12ae 2026-08-18)
+Linux 6.6.87.2-microsoft-standard-WSL2 x86_64
+=== fmt
+fmt: passed
+=== clippy
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 13.55s
+=== test
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+=== durable recovery with evidence
+test child_holds_a_claim_transaction_until_killed ... ok
+test claims_counters_and_fencing_survive_a_restart ... ok
+test waiting_failed_gated_accepted_and_cancelled_runs_replay_the_same_after_reopen ... ok
+test a_controller_killed_mid_transaction_leaves_no_partial_claim ... ok
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+=== 2026-09-06T22:37:33Z done

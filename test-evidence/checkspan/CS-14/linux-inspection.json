@@ -1,0 +1,350 @@
+{
+  "row_counts": [
+    [
+      "graphs",
+      1
+    ],
+    [
+      "runs",
+      5
+    ],
+    [
+      "events",
+      16
+    ],
+    [
+      "attempts",
+      3
+    ],
+    [
+      "receipts",
+      2
+    ],
+    [
+      "gate_packets",
+      1
+    ],
+    [
+      "gate_decisions",
+      0
+    ],
+    [
+      "claims",
+      4
+    ],
+    [
+      "artifacts",
+      0
+    ]
+  ],
+  "runs": {
+    "run-accept": {
+      "active_claims": 0,
+      "dispatches": 1,
+      "events": 4,
+      "summary": [
+        {
+          "attempts": 1,
+          "last_verdict": "accept",
+          "node": "cs_patch",
+          "receipts": 1
+        }
+      ],
+      "views": [
+        {
+          "current_attempt": 1,
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_patch",
+            "revision": 1
+          },
+          "receipt": {
+            "id": "rcpt-run-accept-1",
+            "node": {
+              "graph_id": "review_pilot",
+              "node_id": "cs_patch",
+              "revision": 1
+            },
+            "run_id": "run-accept"
+          },
+          "record": "node_view",
+          "run_id": "run-accept",
+          "schema_version": 1,
+          "status": "accepted"
+        },
+        {
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_ci",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-accept",
+          "schema_version": 1,
+          "status": "open"
+        },
+        {
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_ci_gate",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-accept",
+          "schema_version": 1,
+          "status": "open"
+        },
+        {
+          "blocked_reason": "dependency cs_ci is open in this run, not accepted",
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_packet",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-accept",
+          "schema_version": 1,
+          "status": "open"
+        }
+      ]
+    },
+    "run-cancel": {
+      "active_claims": 0,
+      "dispatches": 1,
+      "events": 3,
+      "summary": [],
+      "views": [
+        {
+          "current_attempt": 1,
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_patch",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-cancel",
+          "schema_version": 1,
+          "status": "cancelled"
+        },
+        {
+          "blocked_reason": "dependency cs_patch is cancelled in this run, not accepted",
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_ci",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-cancel",
+          "schema_version": 1,
+          "status": "open"
+        },
+        {
+          "blocked_reason": "dependency cs_patch is cancelled in this run, not accepted",
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_ci_gate",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-cancel",
+          "schema_version": 1,
+          "status": "open"
+        },
+        {
+          "blocked_reason": "dependency cs_patch is cancelled in this run, not accepted; dependency cs_ci is open in this run, not accepted",
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_packet",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-cancel",
+          "schema_version": 1,
+          "status": "open"
+        }
+      ]
+    },
+    "run-fail": {
+      "active_claims": 0,
+      "dispatches": 1,
+      "events": 3,
+      "summary": [
+        {
+          "attempts": 1,
+          "last_verdict": null,
+          "node": "cs_patch",
+          "receipts": 0
+        }
+      ],
+      "views": [
+        {
+          "current_attempt": 1,
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_patch",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-fail",
+          "schema_version": 1,
+          "status": "failed"
+        },
+        {
+          "blocked_reason": "dependency cs_patch is failed in this run, not accepted",
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_ci",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-fail",
+          "schema_version": 1,
+          "status": "open"
+        },
+        {
+          "blocked_reason": "dependency cs_patch is failed in this run, not accepted",
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_ci_gate",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-fail",
+          "schema_version": 1,
+          "status": "open"
+        },
+        {
+          "blocked_reason": "dependency cs_patch is failed in this run, not accepted; dependency cs_ci is open in this run, not accepted",
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_packet",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-fail",
+          "schema_version": 1,
+          "status": "open"
+        }
+      ]
+    },
+    "run-gate": {
+      "active_claims": 0,
+      "dispatches": 1,
+      "events": 5,
+      "summary": [
+        {
+          "attempts": 1,
+          "last_verdict": "reject",
+          "node": "cs_patch",
+          "receipts": 1
+        }
+      ],
+      "views": [
+        {
+          "current_attempt": 1,
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_patch",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-gate",
+          "schema_version": 1,
+          "status": "gated",
+          "waiting_on_gate": "gate-0001"
+        },
+        {
+          "blocked_reason": "dependency cs_patch is gated in this run, not accepted",
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_ci",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-gate",
+          "schema_version": 1,
+          "status": "open"
+        },
+        {
+          "blocked_reason": "dependency cs_patch is gated in this run, not accepted",
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_ci_gate",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-gate",
+          "schema_version": 1,
+          "status": "open"
+        },
+        {
+          "blocked_reason": "dependency cs_patch is gated in this run, not accepted; dependency cs_ci is open in this run, not accepted",
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_packet",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-gate",
+          "schema_version": 1,
+          "status": "open"
+        }
+      ]
+    },
+    "run-wait": {
+      "active_claims": 0,
+      "dispatches": 0,
+      "events": 1,
+      "summary": [],
+      "views": [
+        {
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_patch",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-wait",
+          "schema_version": 1,
+          "status": "open"
+        },
+        {
+          "blocked_reason": "dependency cs_patch is open in this run, not accepted",
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_ci",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-wait",
+          "schema_version": 1,
+          "status": "open"
+        },
+        {
+          "blocked_reason": "dependency cs_patch is open in this run, not accepted",
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_ci_gate",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-wait",
+          "schema_version": 1,
+          "status": "open"
+        },
+        {
+          "blocked_reason": "dependency cs_patch is open in this run, not accepted; dependency cs_ci is open in this run, not accepted",
+          "node": {
+            "graph_id": "review_pilot",
+            "node_id": "cs_packet",
+            "revision": 1
+          },
+          "record": "node_view",
+          "run_id": "run-wait",
+          "schema_version": 1,
+          "status": "open"
+        }
+      ]
+    }
+  }
+}

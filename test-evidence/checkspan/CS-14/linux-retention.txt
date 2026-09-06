@@ -1,0 +1,2 @@
+ledger bytes: 102400
+row counts: [("graphs", 1), ("runs", 5), ("events", 16), ("attempts", 3), ("receipts", 2), ("gate_packets", 1), ("gate_decisions", 0), ("claims", 4), ("artifacts", 0)]
