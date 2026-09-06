@@ -11,4 +11,5 @@ pub mod cli;
 pub mod contracts;
 pub mod digests;
 pub mod graph;
+pub mod store;
 pub mod validation;

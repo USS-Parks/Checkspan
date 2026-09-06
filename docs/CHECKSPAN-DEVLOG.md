@@ -8,7 +8,7 @@
 - Implementation authorization: **full STS approved by Basho on 2026-09-06** ("Approved for full STS now"). Execution proceeds sequentially and halts at every explicit stop in PSPR §0.3; the first stop is the M1 boundary after CS-07.
 - Implementation branch: `codex/checkspan-m1`. Per Basho's instruction of 2026-09-06, every completed prompt is committed on that branch, fast-forwarded into `main`, and both refs are pushed.
 - M2 authorization: **"Run M2 STS" received from Basho on 2026-09-06** after the M1 report; CS-08 through CS-14 are authorized, with the M2 boundary (after CS-14) as the next explicit stop. Basho reiterated: commit and merge to `main` after every prompt.
-- Current prompt: **CS-08 complete; CS-09 next.**
+- Current prompt: **CS-09 complete; CS-10 next.**
 - Implemented product behavior: `checkspan validate <file>` and `checkspan inspect <file>` over any supported record, with graph admission (dependency resolution, port and type compatibility, cycles, hidden proof dependencies, external imports, gate wait chains, target closure, deterministic order) for graph documents; stable JSON output and exit codes; no dispatch, run store, or writes.
 
 ## DOC-00 — Name, repository wiring, and review draft
@@ -269,4 +269,30 @@ No git worktree other than the canonical checkout is registered (`git worktree l
 **Not claimed:** storage of digests or revision immutability enforcement (CS-09); hosted matrix for this commit (queued on push; recorded at CS-14).
 
 **Acceptance:** CS-08 gate passed locally. Implementation commit SHA is recorded in the CS-09 entry.  
+**Open blockers:** none.
+
+## CS-09 — Add transactional run storage
+
+**Date:** 2026-09-06.  
+**Source SHA before work:** d36e2ded2180733a8f5896506e0a6c8e854b3f29 (CS-08 implementation commit; `main`).  
+
+**Changed paths:** `src/store/mod.rs` (new); `src/lib.rs`; `Cargo.toml`, `Cargo.lock` (`rusqlite` with bundled SQLite); `tests/store_transactions.rs` (new); this log; the verification ledger; the dependency record.
+
+**Design as implemented:** `Store::open(path)` creates or opens one SQLite file, sets WAL, `synchronous=FULL`, foreign keys, and a 5 s busy timeout, and applies schema version 1 inside a transaction; a file whose `user_version` is newer is refused with `UnsupportedSchema` and left byte-identical. Tables (all STRICT): `graphs` (revision bound to its `graph_spec_digest`), `runs` (foreign key to the graph revision), `events` (append-only log with `AUTOINCREMENT` sequence), `attempts` (one row per started attempt, keyed by run, node, number), `receipts` (foreign key to the sealed attempt), `gate_packets`, `gate_decisions` (one per packet), and `artifacts` (bounded locator, size). Triggers make graphs, attempts, receipts, and events immutable, forbid deleting events, and refuse a `receipt_admitted` event whose receipt row does not exist, so acceptance cannot be written without its receipt. Every write runs inside `Store::transaction` (`BEGIN IMMEDIATE`); composite operations (`create_run`, `seal_attempt`, `admit_receipt`, `open_gate`, `admit_decision`) write the record row and its event in one transaction. Records are stored as their JSON with a 4 MiB bound; reads parse them back through the header-first record parser. `summary` is a derived per-node view (attempt count, receipt count, last verdict) computed from the tables; `row_counts` supports retention accounting. Storing an identical graph revision again is a no-op; different content at the same revision is a `RevisionConflict`.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed |
+| `cargo test --locked` | passed: 104 tests (92 prior + 12 store, all against real SQLite files in a per-test temp directory) |
+| `cargo deny check` | advisories, bans, licenses, sources ok |
+| `cargo audit` | no advisories against 120 lockfile entries |
+
+**Gate evidence (V1/V3, real SQLite):** opening creates a version-1 WAL file and reopening keeps it; a graph revision stores once, an identical store is a no-op, different content at the same revision is refused with both digests and the original content is what loads, and a later revision stores; a run needs its stored graph, cannot be created twice, and is created together with its `run_created` event; sealing an attempt and admitting a receipt each write the record row and the event in one transaction, duplicates are refused, and the derived summary shows one attempt, one receipt, last verdict `accept`; a receipt for an unsealed attempt and an attempt for an unknown run are refused with nothing else recorded; a raw `receipt_admitted` event without a receipt row is refused by the trigger and leaves no acceptance; a transaction that appends an event, inserts an attempt, a receipt, and an artifact, sees them inside the transaction, and then fails leaves every row count and the event log exactly as before while the earlier sealed attempt is intact, and the same writes commit when the transaction succeeds; direct SQL updates to graphs, attempts, or events and deletes from events are refused by triggers; a gate packet records with `gate_opened`, a decision requires its packet, records with `decision_admitted`, and a second decision for the same packet is refused; an artifact locator over 2048 bytes is refused while one at the bound is stored; a file with `user_version` 7 is refused with `UnsupportedSchema { found: 7, supported: 1 }`, its bytes are unchanged, its own table survives, and no Checkspan table is created; a non-SQLite file is refused unchanged.
+
+**Not claimed:** state transitions (CS-10), dependency resolution (CS-11), claims and competing processes (CS-12), budgets (CS-13), abrupt process termination and native Linux (CS-14); a tamper-proof ledger (a writable local file is not one); the store location relative to a candidate checkout (the caller chooses the path; CS-15/CS-20 decide the default).
+
+**Acceptance:** CS-09 gate passed locally. Implementation commit SHA is recorded in the CS-10 entry.  
 **Open blockers:** none.
