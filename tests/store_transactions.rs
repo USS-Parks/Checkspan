@@ -428,3 +428,30 @@ fn a_non_sqlite_file_is_refused() {
     assert!(Store::open(&path).is_err());
     assert_eq!(fs::read(&path).unwrap(), b"this is not a database");
 }
+
+#[test]
+fn a_version_one_store_migrates_forward_inside_a_transaction() {
+    let path = temp_store("migrate");
+    {
+        let conn = rusqlite::Connection::open(&path).unwrap();
+        conn.execute_batch(checkspan::store::SCHEMA_V1).unwrap();
+        conn.pragma_update(None, "user_version", 1).unwrap();
+        conn.execute(
+            "INSERT INTO graphs (graph_id, revision, spec_digest, spec_json) VALUES ('g', 1, 'sha256:x', '{}')",
+            [],
+        )
+        .unwrap();
+    }
+    let store = Store::open(&path).unwrap();
+    assert_eq!(store.schema_version().unwrap(), SCHEMA_VERSION);
+    let counts = store.row_counts().unwrap();
+    assert!(
+        counts.iter().any(|(t, n)| t == "graphs" && *n == 1),
+        "existing rows survive"
+    );
+    assert!(
+        counts.iter().any(|(t, n)| t == "claims" && *n == 0),
+        "the claims table exists"
+    );
+    assert!(store.active_claims().unwrap().is_empty());
+}

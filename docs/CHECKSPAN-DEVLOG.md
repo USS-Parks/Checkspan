@@ -8,7 +8,7 @@
 - Implementation authorization: **full STS approved by Basho on 2026-09-06** ("Approved for full STS now"). Execution proceeds sequentially and halts at every explicit stop in PSPR §0.3; the first stop is the M1 boundary after CS-07.
 - Implementation branch: `codex/checkspan-m1`. Per Basho's instruction of 2026-09-06, every completed prompt is committed on that branch, fast-forwarded into `main`, and both refs are pushed.
 - M2 authorization: **"Run M2 STS" received from Basho on 2026-09-06** after the M1 report; CS-08 through CS-14 are authorized, with the M2 boundary (after CS-14) as the next explicit stop. Basho reiterated: commit and merge to `main` after every prompt.
-- Current prompt: **CS-11 complete; CS-12 next.**
+- Current prompt: **CS-12 complete; CS-13 next.**
 - Implemented product behavior: `checkspan validate <file>` and `checkspan inspect <file>` over any supported record, with graph admission (dependency resolution, port and type compatibility, cycles, hidden proof dependencies, external imports, gate wait chains, target closure, deterministic order) for graph documents; stable JSON output and exit codes; no dispatch, run store, or writes.
 
 ## DOC-00 — Name, repository wiring, and review draft
@@ -345,4 +345,29 @@ No git worktree other than the canonical checkout is registered (`git worktree l
 **Not claimed:** who calls `resolve` at dispatch and `recheck` before acceptance (CS-12 and CS-19); enforcement that a terminal node is never sealed again (the store accepts the row; the scheduler must consult the reducer first, CS-12); hosted matrix for this commit (queued on push; recorded at CS-14).
 
 **Acceptance:** CS-11 gate passed locally. Implementation commit SHA is recorded in the CS-12 entry.  
+**Open blockers:** none.
+
+## CS-12 — Implement exclusive scheduling and completion ownership
+
+**Date:** 2026-09-06.  
+**Source SHA before work:** d55a50d4c4828963695d4ef2a03dc40579eeaa50 (CS-11 implementation commit; `main`).  
+
+**Changed paths:** `src/scheduler/mod.rs` (new); `src/store/mod.rs` (schema version 2 with `claims`, forward migration, the `Ledger` read trait implemented by the store and by transactions, claim rows, fencing tokens, release); `src/deps/mod.rs` (reads through `Ledger`); `src/lib.rs`; `tests/claim_ownership.rs` (new); `tests/store_transactions.rs` (migration test); this log; the verification ledger; the dependency record.
+
+**Design as implemented:** `Store` schema 2 adds `claims` (run, node, attempt number, owner, fencing token unique per run, the dependency receipts pinned at dispatch, the resources held, active flag, release reason, timestamps); a version-1 file migrates forward inside a transaction and a newer file is still refused. `Ledger` exposes the reads a decision needs (events, receipts, attempts, revocations, claims) on both `Store` and `Tx`, so `claim_next` does everything inside one `BEGIN IMMEDIATE` transaction: replay the run's events, count active claims against `max_active` (default one, the single-worker foundation), resolve dependencies through the CS-11 service, walk the admitted dependency order, skip any ready node whose resource scope conflicts with a resource an active claim holds (exclusive against anything, anything against exclusive), check the reducer accepts the dispatch, then write the claim row with the next fencing token and the `attempt_dispatched` event (owner, fence, pinned receipts) together. The outcome is `Claimed`, `Busy`, or `NothingReady` with every blocked node's reason and every skipped conflict. `complete` seals the attempt and releases the claim in one transaction only if the attempt describes the claimed node and number, carries an execution record and the pinned dependency receipts, the claim row is still active under the caller's exact fence and owner, and the reducer accepts the finish; otherwise nothing is written and the error says whether the claim was released as `completed`, `cancelled`, or `reclaimed`. `cancel` releases the node's active claim and records `node_cancelled`; `reclaim` (by another controller) seals the attempt as `failed` with error code `claim_reclaimed`, naming the owner it took the claim from, and releases the claim as `reclaimed`. `views` fills `blocked_reason` for open nodes. No command is executed.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed |
+| `cargo test --locked` | passed: 131 tests (122 prior + 8 claim ownership + 1 store migration) |
+| `cargo deny check` / `cargo audit` | not rerun; no dependency change since CS-09 |
+
+**Gate evidence (V1/V3, real SQLite):** on the six-node research diamond, claims follow the admitted order (`cs_requirements`, then `cs_implementation`), the default cap makes a second claim `Busy`, fencing tokens are 1 then 2 and never reused, sealed-but-unchecked producers leave synthesis blocked with a reason naming them, and views carry those reasons; **two real controller processes** (the test binary re-spawned twice with distinct identities against one store file) each try to claim the one ready node and exactly one succeeds while the other reports `Busy`, with one claim row, one dispatch event, and the winner's identity on the row; a completion after cancellation is refused as stale with release `cancelled`, writes nothing, and cancelling twice is illegal; a reclaim by a second controller seals the first controller's attempt as `failed` with `claim_reclaimed`, releases the claim as `reclaimed`, and the first controller's later completion is refused with nothing written; a completion with the wrong attempt number, no execution record, a forged fence, a different owner, or different pinned receipts is refused before anything is sealed, and a second completion of the same claim is stale as `completed`; with the cap raised to three, two independent tasks that both need the checkout exclusively serialize (the second is reported as a resource conflict, not busy, and claims after the first completes), two nodes sharing a model endpoint hold two claims at once, and a shared holder blocks an exclusive requester; a scheduler refuses a run of another graph revision and an empty controller identity; a version-1 store migrates to version 2 with its rows intact and an empty claims table.
+
+**Not claimed:** abrupt process termination and reopening (CS-14); retry limits and budgets (`RetryAllowed` is not emitted by the scheduler yet, CS-13); receipt admission and the pre-acceptance recheck call (CS-19); any worker execution (CS-17); hosted matrix for this commit (queued on push; recorded at CS-14).
+
+**Acceptance:** CS-12 gate passed locally. Implementation commit SHA is recorded in the CS-13 entry.  
 **Open blockers:** none.

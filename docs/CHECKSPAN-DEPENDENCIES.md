@@ -38,7 +38,7 @@ CS-06: no dependency change. `autoexamples = false` is set because `examples/` h
 
 CS-07: no dependency change. Native Linux acceptance used the same pinned toolchain, installed by `rustup toolchain install` from `rust-toolchain.toml` inside WSL2 Ubuntu 26.04 (rustup 1.29.1).
 
-CS-10, CS-11: no dependency change.
+CS-10, CS-11, CS-12: no dependency change.
 
 CS-09: adds `rusqlite` 0.40.2 with `bundled` (published 2026-08-08; 120 lockfile entries after the change; new transitive crates `libsqlite3-sys`, `hashlink`, `fallible-iterator`, `fallible-streaming-iterator`, `bitflags`, `smallvec`, `allocator-api2`, `equivalent`). Bundled SQLite compiles with the MSVC and GNU C toolchains already required for the build. `cargo deny check` and `cargo audit` pass.
 

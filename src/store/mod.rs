@@ -1,18 +1,20 @@
 //! Transactional run storage on SQLite.
 //!
 //! One local SQLite file is the authoritative ledger for graphs, runs,
-//! attempts, receipts, gate packets, gate decisions, and the ordered event
-//! log that ties them together. Application records are append-only: a
+//! attempts, receipts, gate packets, gate decisions, claims, and the ordered
+//! event log that ties them together. Application records are append-only: a
 //! graph revision is bound to its content digest and can never be replaced,
 //! an attempt row is written once when it is sealed, and acceptance exists
 //! only as a `receipt_admitted` event written in the same transaction as the
-//! receipt row (a trigger refuses the event without the row). Derived views
-//! are computed from these tables and may be rebuilt at any time.
+//! receipt row (a trigger refuses the event without the row). Claims are the
+//! one mutable row kind, and only to be released once. Derived views are
+//! computed from these tables and may be rebuilt at any time.
 //!
 //! The store reuses SQLite's atomic commit for crash recovery: WAL journal,
 //! `synchronous=FULL`, and foreign keys on. It is a trusted local ledger,
 //! not a tamper-proof one.
 
+use std::collections::BTreeSet;
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -21,13 +23,13 @@ use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params};
 use serde_json::Value;
 
 use crate::contracts::{
-    Attempt, GateDecision, GatePacket, GraphRef, GraphRun, GraphSpec, NodeId, RunId,
-    VerifierReceipt, parse_record,
+    Attempt, AttemptNumber, GateDecision, GatePacket, GraphRef, GraphRun, GraphSpec, NodeId,
+    ReceiptRef, ResourceClaim, RunId, VerifierReceipt, parse_record,
 };
 use crate::digests::{CanonicalError, graph_spec_digest};
 
 /// The store schema version this build reads and writes.
-pub const SCHEMA_VERSION: u32 = 1;
+pub const SCHEMA_VERSION: u32 = 2;
 
 /// Longest artifact locator the store accepts.
 pub const MAX_LOCATOR_LEN: usize = 2048;
@@ -35,7 +37,8 @@ pub const MAX_LOCATOR_LEN: usize = 2048;
 /// Longest JSON record the store accepts, in bytes.
 pub const MAX_RECORD_LEN: usize = 4 * 1024 * 1024;
 
-const SCHEMA_V1: &str = "
+/// Schema version 1: records and the event log.
+pub const SCHEMA_V1: &str = "
 CREATE TABLE graphs (
     graph_id    TEXT    NOT NULL,
     revision    INTEGER NOT NULL,
@@ -158,6 +161,40 @@ BEGIN
 END;
 ";
 
+/// Schema version 2: claims with fencing tokens.
+pub const SCHEMA_V2: &str = "
+CREATE TABLE claims (
+    run_id          TEXT    NOT NULL REFERENCES runs (run_id),
+    node_id         TEXT    NOT NULL,
+    number          INTEGER NOT NULL,
+    owner           TEXT    NOT NULL,
+    fence           INTEGER NOT NULL,
+    dependency_json TEXT    NOT NULL,
+    resources_json  TEXT    NOT NULL,
+    active          INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+    release         TEXT,
+    claimed_at      TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    released_at     TEXT,
+    PRIMARY KEY (run_id, node_id, number),
+    UNIQUE (run_id, fence)
+) STRICT;
+
+CREATE INDEX claims_active ON claims (active) WHERE active = 1;
+
+CREATE TRIGGER released_claims_are_immutable
+BEFORE UPDATE ON claims
+WHEN OLD.active = 0
+BEGIN
+    SELECT RAISE(ABORT, 'a released claim is immutable');
+END;
+
+CREATE TRIGGER claims_are_not_deleted
+BEFORE DELETE ON claims
+BEGIN
+    SELECT RAISE(ABORT, 'claims are never deleted');
+END;
+";
+
 /// Why a store operation failed.
 #[derive(Debug)]
 pub enum StoreError {
@@ -240,6 +277,10 @@ impl From<CanonicalError> for StoreError {
     }
 }
 
+fn corrupt<E: fmt::Display>(e: E) -> StoreError {
+    StoreError::Corrupt(e.to_string())
+}
+
 /// Outcome of storing a graph revision.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StoredGraph {
@@ -294,6 +335,69 @@ pub struct NodeSummary {
     pub last_verdict: Option<String>,
 }
 
+/// A claim on one attempt: who owns it, its fencing token, the dependency
+/// receipts pinned at dispatch, and the resources it holds while active.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ClaimRow {
+    /// The run.
+    pub run_id: RunId,
+    /// The node.
+    pub node_id: NodeId,
+    /// The attempt claimed.
+    pub number: AttemptNumber,
+    /// Controller identity that owns the claim.
+    pub owner: String,
+    /// Fencing token, unique and increasing within the run. A completion
+    /// carrying an older token than the row's is stale.
+    pub fence: u64,
+    /// Dependency receipts pinned at dispatch.
+    pub dependency_receipts: Vec<ReceiptRef>,
+    /// Resources held while active.
+    pub resources: Vec<ResourceClaim>,
+    /// Whether the claim is still held.
+    pub active: bool,
+    /// How it was released: `completed`, `cancelled`, or `reclaimed`.
+    pub release: Option<String>,
+    /// When the store recorded the claim.
+    pub claimed_at: String,
+    /// When it was released.
+    pub released_at: Option<String>,
+}
+
+/// Read access to the ledger, available both outside and inside a
+/// transaction so that decisions and the writes they justify can share one
+/// consistent snapshot.
+pub trait Ledger {
+    /// The event log of a run, in order.
+    fn events(&self, run_id: &RunId) -> Result<Vec<StoredEvent>, StoreError>;
+    /// One receipt by id.
+    fn receipt(
+        &self,
+        run_id: &RunId,
+        receipt_id: &str,
+    ) -> Result<Option<VerifierReceipt>, StoreError>;
+    /// One sealed attempt by number.
+    fn attempt(
+        &self,
+        run_id: &RunId,
+        node_id: &NodeId,
+        number: u32,
+    ) -> Result<Option<Attempt>, StoreError>;
+    /// Sealed attempts of one node, in attempt order.
+    fn attempts(&self, run_id: &RunId, node_id: &NodeId) -> Result<Vec<Attempt>, StoreError>;
+    /// Ids of receipts revoked in a run.
+    fn revoked_receipts(&self, run_id: &RunId) -> Result<BTreeSet<String>, StoreError>;
+    /// Every active claim in the store, oldest first.
+    fn active_claims(&self) -> Result<Vec<ClaimRow>, StoreError>;
+    /// One claim row.
+    fn claim(
+        &self,
+        run_id: &RunId,
+        node_id: &NodeId,
+        number: u32,
+    ) -> Result<Option<ClaimRow>, StoreError>;
+}
+
 /// A transaction over the store. Every write goes through one.
 pub struct Tx<'a> {
     inner: rusqlite::Transaction<'a>,
@@ -323,33 +427,262 @@ fn is_constraint(e: &rusqlite::Error) -> bool {
     )
 }
 
+fn read_events(conn: &Connection, run_id: &RunId) -> Result<Vec<StoredEvent>, StoreError> {
+    let mut stmt = conn.prepare(
+        "SELECT seq, run_id, node_id, kind, payload_json, recorded_at FROM events WHERE run_id = ?1 ORDER BY seq",
+    )?;
+    let rows = stmt.query_map(params![run_id.as_str()], |r| {
+        Ok((
+            r.get::<_, i64>(0)?,
+            r.get::<_, String>(1)?,
+            r.get::<_, Option<String>>(2)?,
+            r.get::<_, String>(3)?,
+            r.get::<_, String>(4)?,
+            r.get::<_, String>(5)?,
+        ))
+    })?;
+    let mut events = Vec::new();
+    for row in rows {
+        let (seq, run, node, kind, payload, recorded_at) = row?;
+        events.push(StoredEvent {
+            seq: u64::try_from(seq).map_err(corrupt)?,
+            run_id: RunId::new(run).map_err(corrupt)?,
+            node_id: node.map(|n| NodeId::new(n).map_err(corrupt)).transpose()?,
+            kind,
+            payload: serde_json::from_str(&payload).map_err(corrupt)?,
+            recorded_at,
+        });
+    }
+    Ok(events)
+}
+
+fn read_receipt(
+    conn: &Connection,
+    run_id: &RunId,
+    receipt_id: &str,
+) -> Result<Option<VerifierReceipt>, StoreError> {
+    let json: Option<String> = conn
+        .query_row(
+            "SELECT receipt_json FROM receipts WHERE run_id = ?1 AND receipt_id = ?2",
+            params![run_id.as_str(), receipt_id],
+            |r| r.get(0),
+        )
+        .optional()?;
+    json.map(|j| parse_record(&j).map_err(corrupt)).transpose()
+}
+
+fn read_attempt(
+    conn: &Connection,
+    run_id: &RunId,
+    node_id: &NodeId,
+    number: u32,
+) -> Result<Option<Attempt>, StoreError> {
+    let json: Option<String> = conn
+        .query_row(
+            "SELECT attempt_json FROM attempts WHERE run_id = ?1 AND node_id = ?2 AND number = ?3",
+            params![run_id.as_str(), node_id.as_str(), number],
+            |r| r.get(0),
+        )
+        .optional()?;
+    json.map(|j| parse_record(&j).map_err(corrupt)).transpose()
+}
+
+fn read_attempts(
+    conn: &Connection,
+    run_id: &RunId,
+    node_id: &NodeId,
+) -> Result<Vec<Attempt>, StoreError> {
+    let mut stmt = conn.prepare(
+        "SELECT attempt_json FROM attempts WHERE run_id = ?1 AND node_id = ?2 ORDER BY number",
+    )?;
+    let rows = stmt.query_map(params![run_id.as_str(), node_id.as_str()], |r| {
+        r.get::<_, String>(0)
+    })?;
+    rows.map(|row| parse_record(&row?).map_err(corrupt))
+        .collect()
+}
+
+fn read_revoked(conn: &Connection, run_id: &RunId) -> Result<BTreeSet<String>, StoreError> {
+    let mut stmt = conn.prepare(
+        "SELECT json_extract(payload_json, '$.receipt_id') FROM events WHERE run_id = ?1 AND kind = 'receipt_revoked'",
+    )?;
+    let rows = stmt.query_map(params![run_id.as_str()], |r| r.get::<_, Option<String>>(0))?;
+    let mut out = BTreeSet::new();
+    for row in rows {
+        if let Some(id) = row? {
+            out.insert(id);
+        }
+    }
+    Ok(out)
+}
+
+const CLAIM_COLUMNS: &str = "run_id, node_id, number, owner, fence, dependency_json, resources_json, active, release, claimed_at, released_at";
+
+fn claim_from_row(r: &rusqlite::Row<'_>) -> rusqlite::Result<ClaimRow> {
+    let decode = |e: serde_json::Error| {
+        rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e))
+    };
+    let ident = |e: crate::contracts::InvalidValue| {
+        rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e))
+    };
+    Ok(ClaimRow {
+        run_id: RunId::new(r.get::<_, String>(0)?).map_err(ident)?,
+        node_id: NodeId::new(r.get::<_, String>(1)?).map_err(ident)?,
+        number: AttemptNumber::new(r.get::<_, u32>(2)?).map_err(ident)?,
+        owner: r.get(3)?,
+        fence: u64::try_from(r.get::<_, i64>(4)?).unwrap_or_default(),
+        dependency_receipts: serde_json::from_str(&r.get::<_, String>(5)?).map_err(decode)?,
+        resources: serde_json::from_str(&r.get::<_, String>(6)?).map_err(decode)?,
+        active: r.get::<_, i64>(7)? == 1,
+        release: r.get(8)?,
+        claimed_at: r.get(9)?,
+        released_at: r.get(10)?,
+    })
+}
+
+fn read_active_claims(conn: &Connection) -> Result<Vec<ClaimRow>, StoreError> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {CLAIM_COLUMNS} FROM claims WHERE active = 1 ORDER BY claimed_at, run_id, fence"
+    ))?;
+    let rows = stmt.query_map([], claim_from_row)?;
+    rows.map(|r| r.map_err(StoreError::Sqlite)).collect()
+}
+
+fn read_claim(
+    conn: &Connection,
+    run_id: &RunId,
+    node_id: &NodeId,
+    number: u32,
+) -> Result<Option<ClaimRow>, StoreError> {
+    Ok(conn
+        .query_row(
+            &format!(
+                "SELECT {CLAIM_COLUMNS} FROM claims WHERE run_id = ?1 AND node_id = ?2 AND number = ?3"
+            ),
+            params![run_id.as_str(), node_id.as_str(), number],
+            claim_from_row,
+        )
+        .optional()?)
+}
+
+impl Ledger for Store {
+    fn events(&self, run_id: &RunId) -> Result<Vec<StoredEvent>, StoreError> {
+        read_events(&self.conn, run_id)
+    }
+
+    fn receipt(
+        &self,
+        run_id: &RunId,
+        receipt_id: &str,
+    ) -> Result<Option<VerifierReceipt>, StoreError> {
+        read_receipt(&self.conn, run_id, receipt_id)
+    }
+
+    fn attempt(
+        &self,
+        run_id: &RunId,
+        node_id: &NodeId,
+        number: u32,
+    ) -> Result<Option<Attempt>, StoreError> {
+        read_attempt(&self.conn, run_id, node_id, number)
+    }
+
+    fn attempts(&self, run_id: &RunId, node_id: &NodeId) -> Result<Vec<Attempt>, StoreError> {
+        read_attempts(&self.conn, run_id, node_id)
+    }
+
+    fn revoked_receipts(&self, run_id: &RunId) -> Result<BTreeSet<String>, StoreError> {
+        read_revoked(&self.conn, run_id)
+    }
+
+    fn active_claims(&self) -> Result<Vec<ClaimRow>, StoreError> {
+        read_active_claims(&self.conn)
+    }
+
+    fn claim(
+        &self,
+        run_id: &RunId,
+        node_id: &NodeId,
+        number: u32,
+    ) -> Result<Option<ClaimRow>, StoreError> {
+        read_claim(&self.conn, run_id, node_id, number)
+    }
+}
+
+impl Ledger for Tx<'_> {
+    fn events(&self, run_id: &RunId) -> Result<Vec<StoredEvent>, StoreError> {
+        read_events(&self.inner, run_id)
+    }
+
+    fn receipt(
+        &self,
+        run_id: &RunId,
+        receipt_id: &str,
+    ) -> Result<Option<VerifierReceipt>, StoreError> {
+        read_receipt(&self.inner, run_id, receipt_id)
+    }
+
+    fn attempt(
+        &self,
+        run_id: &RunId,
+        node_id: &NodeId,
+        number: u32,
+    ) -> Result<Option<Attempt>, StoreError> {
+        read_attempt(&self.inner, run_id, node_id, number)
+    }
+
+    fn attempts(&self, run_id: &RunId, node_id: &NodeId) -> Result<Vec<Attempt>, StoreError> {
+        read_attempts(&self.inner, run_id, node_id)
+    }
+
+    fn revoked_receipts(&self, run_id: &RunId) -> Result<BTreeSet<String>, StoreError> {
+        read_revoked(&self.inner, run_id)
+    }
+
+    fn active_claims(&self) -> Result<Vec<ClaimRow>, StoreError> {
+        read_active_claims(&self.inner)
+    }
+
+    fn claim(
+        &self,
+        run_id: &RunId,
+        node_id: &NodeId,
+        number: u32,
+    ) -> Result<Option<ClaimRow>, StoreError> {
+        read_claim(&self.inner, run_id, node_id, number)
+    }
+}
+
 impl Store {
-    /// Open the store at `path`, creating and initializing it if absent.
-    /// A file with a newer schema is refused without modification.
+    /// Open the store at `path`, creating and initializing it if absent. An
+    /// older schema is migrated forward inside a transaction; a newer one is
+    /// refused without modification.
     pub fn open(path: impl AsRef<Path>) -> Result<Store, StoreError> {
         let path = path.as_ref().to_path_buf();
         let conn = Connection::open(&path)?;
         conn.busy_timeout(Duration::from_secs(5))?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
         let found: u32 = conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
-        match found {
-            0 => {
-                conn.pragma_update(None, "journal_mode", "WAL")?;
-                conn.pragma_update(None, "synchronous", "FULL")?;
-                let tx = conn.unchecked_transaction()?;
+        if found > SCHEMA_VERSION {
+            return Err(StoreError::UnsupportedSchema {
+                found,
+                supported: SCHEMA_VERSION,
+            });
+        }
+        if found == 0 {
+            conn.pragma_update(None, "journal_mode", "WAL")?;
+        }
+        conn.pragma_update(None, "synchronous", "FULL")?;
+        if found < SCHEMA_VERSION {
+            let tx = conn.unchecked_transaction()?;
+            if found < 1 {
                 tx.execute_batch(SCHEMA_V1)?;
-                tx.pragma_update(None, "user_version", SCHEMA_VERSION)?;
-                tx.commit()?;
             }
-            SCHEMA_VERSION => {
-                conn.pragma_update(None, "synchronous", "FULL")?;
+            if found < 2 {
+                tx.execute_batch(SCHEMA_V2)?;
             }
-            other => {
-                return Err(StoreError::UnsupportedSchema {
-                    found: other,
-                    supported: SCHEMA_VERSION,
-                });
-            }
+            tx.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+            tx.commit()?;
         }
         Ok(Store { conn, path })
     }
@@ -393,7 +726,7 @@ impl Store {
     /// revision is refused.
     pub fn store_graph(&mut self, spec: &GraphSpec) -> Result<StoredGraph, StoreError> {
         let digest = graph_spec_digest(spec)?.as_str().to_string();
-        let json = serde_json::to_string(spec).map_err(|e| StoreError::Corrupt(e.to_string()))?;
+        let json = serde_json::to_string(spec).map_err(corrupt)?;
         json_len_checked("graph spec", &json)?;
         let graph_ref = spec.graph_ref();
         self.transaction(|tx| {
@@ -446,14 +779,13 @@ impl Store {
                 |r| r.get(0),
             )
             .optional()?;
-        json.map(|j| parse_record(&j).map_err(|e| StoreError::Corrupt(e.to_string())))
-            .transpose()
+        json.map(|j| parse_record(&j).map_err(corrupt)).transpose()
     }
 
     /// Create a run of a stored graph revision and append its `run_created`
     /// event, atomically.
     pub fn create_run(&mut self, run: &GraphRun) -> Result<(), StoreError> {
-        let json = serde_json::to_string(run).map_err(|e| StoreError::Corrupt(e.to_string()))?;
+        let json = serde_json::to_string(run).map_err(corrupt)?;
         json_len_checked("graph run", &json)?;
         self.transaction(|tx| {
             let graph_exists: bool = tx.inner.query_row(
@@ -504,27 +836,13 @@ impl Store {
                 |r| r.get(0),
             )
             .optional()?;
-        json.map(|j| parse_record(&j).map_err(|e| StoreError::Corrupt(e.to_string())))
-            .transpose()
+        json.map(|j| parse_record(&j).map_err(corrupt)).transpose()
     }
 
     /// Seal a finished attempt: insert its record and append `attempt_sealed`
     /// in one transaction.
     pub fn seal_attempt(&mut self, attempt: &Attempt) -> Result<(), StoreError> {
-        self.transaction(|tx| {
-            tx.insert_attempt(attempt)?;
-            tx.append_event(
-                &attempt.run_id,
-                Some(&attempt.node.node_id),
-                "attempt_sealed",
-                &serde_json::json!({
-                    "number": attempt.number,
-                    "outcome": attempt.execution.as_ref().map(|e| e.outcome),
-                    "result_digest": attempt.result.as_ref().map(|r| r.digest.clone()),
-                }),
-            )?;
-            Ok(())
-        })
+        self.transaction(|tx| tx.seal_attempt(attempt))
     }
 
     /// Admit a verifier receipt for a sealed attempt: insert the receipt row
@@ -584,73 +902,6 @@ impl Store {
         })
     }
 
-    /// The event log of a run, in order.
-    pub fn events(&self, run_id: &RunId) -> Result<Vec<StoredEvent>, StoreError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT seq, run_id, node_id, kind, payload_json, recorded_at FROM events WHERE run_id = ?1 ORDER BY seq",
-        )?;
-        let rows = stmt.query_map(params![run_id.as_str()], |r| {
-            Ok((
-                r.get::<_, i64>(0)?,
-                r.get::<_, String>(1)?,
-                r.get::<_, Option<String>>(2)?,
-                r.get::<_, String>(3)?,
-                r.get::<_, String>(4)?,
-                r.get::<_, String>(5)?,
-            ))
-        })?;
-        let mut events = Vec::new();
-        for row in rows {
-            let (seq, run, node, kind, payload, recorded_at) = row?;
-            events.push(StoredEvent {
-                seq: u64::try_from(seq).map_err(|e| StoreError::Corrupt(e.to_string()))?,
-                run_id: RunId::new(run).map_err(|e| StoreError::Corrupt(e.to_string()))?,
-                node_id: node
-                    .map(|n| NodeId::new(n).map_err(|e| StoreError::Corrupt(e.to_string())))
-                    .transpose()?,
-                kind,
-                payload: serde_json::from_str(&payload)
-                    .map_err(|e| StoreError::Corrupt(e.to_string()))?,
-                recorded_at,
-            });
-        }
-        Ok(events)
-    }
-
-    /// Sealed attempts of one node in a run, in attempt order.
-    pub fn attempts(&self, run_id: &RunId, node_id: &NodeId) -> Result<Vec<Attempt>, StoreError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT attempt_json FROM attempts WHERE run_id = ?1 AND node_id = ?2 ORDER BY number",
-        )?;
-        let rows = stmt.query_map(params![run_id.as_str(), node_id.as_str()], |r| {
-            r.get::<_, String>(0)
-        })?;
-        rows.map(|row| {
-            let json = row?;
-            parse_record(&json).map_err(|e| StoreError::Corrupt(e.to_string()))
-        })
-        .collect()
-    }
-
-    /// One sealed attempt by number.
-    pub fn attempt(
-        &self,
-        run_id: &RunId,
-        node_id: &NodeId,
-        number: u32,
-    ) -> Result<Option<Attempt>, StoreError> {
-        let json: Option<String> = self
-            .conn
-            .query_row(
-                "SELECT attempt_json FROM attempts WHERE run_id = ?1 AND node_id = ?2 AND number = ?3",
-                params![run_id.as_str(), node_id.as_str(), number],
-                |r| r.get(0),
-            )
-            .optional()?;
-        json.map(|j| parse_record(&j).map_err(|e| StoreError::Corrupt(e.to_string())))
-            .transpose()
-    }
-
     /// Revoke a stored receipt for future work by appending a run-level
     /// `receipt_revoked` event. The receipt row and every earlier acceptance
     /// stay exactly as recorded.
@@ -681,22 +932,24 @@ impl Store {
         })
     }
 
-    /// Ids of receipts revoked in a run, from its event log.
-    pub fn revoked_receipts(
+    /// The event log of a run, in order.
+    pub fn events(&self, run_id: &RunId) -> Result<Vec<StoredEvent>, StoreError> {
+        read_events(&self.conn, run_id)
+    }
+
+    /// Sealed attempts of one node in a run, in attempt order.
+    pub fn attempts(&self, run_id: &RunId, node_id: &NodeId) -> Result<Vec<Attempt>, StoreError> {
+        read_attempts(&self.conn, run_id, node_id)
+    }
+
+    /// One sealed attempt by number.
+    pub fn attempt(
         &self,
         run_id: &RunId,
-    ) -> Result<std::collections::BTreeSet<String>, StoreError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT json_extract(payload_json, '$.receipt_id') FROM events WHERE run_id = ?1 AND kind = 'receipt_revoked'",
-        )?;
-        let rows = stmt.query_map(params![run_id.as_str()], |r| r.get::<_, Option<String>>(0))?;
-        let mut out = std::collections::BTreeSet::new();
-        for row in rows {
-            if let Some(id) = row? {
-                out.insert(id);
-            }
-        }
-        Ok(out)
+        node_id: &NodeId,
+        number: u32,
+    ) -> Result<Option<Attempt>, StoreError> {
+        read_attempt(&self.conn, run_id, node_id, number)
     }
 
     /// One receipt by id.
@@ -705,16 +958,26 @@ impl Store {
         run_id: &RunId,
         receipt_id: &str,
     ) -> Result<Option<VerifierReceipt>, StoreError> {
-        let json: Option<String> = self
-            .conn
-            .query_row(
-                "SELECT receipt_json FROM receipts WHERE run_id = ?1 AND receipt_id = ?2",
-                params![run_id.as_str(), receipt_id],
-                |r| r.get(0),
-            )
-            .optional()?;
-        json.map(|j| parse_record(&j).map_err(|e| StoreError::Corrupt(e.to_string())))
-            .transpose()
+        read_receipt(&self.conn, run_id, receipt_id)
+    }
+
+    /// Ids of receipts revoked in a run, from its event log.
+    pub fn revoked_receipts(&self, run_id: &RunId) -> Result<BTreeSet<String>, StoreError> {
+        read_revoked(&self.conn, run_id)
+    }
+
+    /// Every active claim in the store, oldest first.
+    pub fn active_claims(&self) -> Result<Vec<ClaimRow>, StoreError> {
+        read_active_claims(&self.conn)
+    }
+
+    /// Every claim of a run, oldest first.
+    pub fn claims(&self, run_id: &RunId) -> Result<Vec<ClaimRow>, StoreError> {
+        let mut stmt = self.conn.prepare(&format!(
+            "SELECT {CLAIM_COLUMNS} FROM claims WHERE run_id = ?1 ORDER BY fence"
+        ))?;
+        let rows = stmt.query_map(params![run_id.as_str()], claim_from_row)?;
+        rows.map(|r| r.map_err(StoreError::Sqlite)).collect()
     }
 
     /// Per-node counts and last verdict for a run: a view derived from the
@@ -744,7 +1007,7 @@ impl Store {
         rows.map(|row| {
             let (node, attempts, receipts, last) = row?;
             Ok(NodeSummary {
-                node_id: NodeId::new(node).map_err(|e| StoreError::Corrupt(e.to_string()))?,
+                node_id: NodeId::new(node).map_err(corrupt)?,
                 attempts: u64::try_from(attempts).unwrap_or_default(),
                 receipts: u64::try_from(receipts).unwrap_or_default(),
                 last_verdict: last,
@@ -764,6 +1027,7 @@ impl Store {
             "receipts",
             "gate_packets",
             "gate_decisions",
+            "claims",
             "artifacts",
         ] {
             let n: i64 =
@@ -805,8 +1069,7 @@ impl Tx<'_> {
 
     /// Insert a sealed attempt record. Every started attempt is written once.
     pub fn insert_attempt(&self, attempt: &Attempt) -> Result<(), StoreError> {
-        let json =
-            serde_json::to_string(attempt).map_err(|e| StoreError::Corrupt(e.to_string()))?;
+        let json = serde_json::to_string(attempt).map_err(corrupt)?;
         json_len_checked("attempt", &json)?;
         let result = self.inner.execute(
             "INSERT INTO attempts (run_id, node_id, number, attempt_json) VALUES (?1, ?2, ?3, ?4)",
@@ -841,11 +1104,26 @@ impl Tx<'_> {
         }
     }
 
+    /// Insert a sealed attempt and append its `attempt_sealed` event.
+    pub fn seal_attempt(&self, attempt: &Attempt) -> Result<(), StoreError> {
+        self.insert_attempt(attempt)?;
+        self.append_event(
+            &attempt.run_id,
+            Some(&attempt.node.node_id),
+            "attempt_sealed",
+            &serde_json::json!({
+                "number": attempt.number,
+                "outcome": attempt.execution.as_ref().map(|e| e.outcome),
+                "result_digest": attempt.result.as_ref().map(|r| r.digest.clone()),
+            }),
+        )?;
+        Ok(())
+    }
+
     /// Insert a receipt row for a sealed attempt. This does not admit it; a
     /// `receipt_admitted` event in the same transaction does.
     pub fn insert_receipt(&self, receipt: &VerifierReceipt) -> Result<(), StoreError> {
-        let json =
-            serde_json::to_string(receipt).map_err(|e| StoreError::Corrupt(e.to_string()))?;
+        let json = serde_json::to_string(receipt).map_err(corrupt)?;
         json_len_checked("receipt", &json)?;
         let result = self.inner.execute(
             "INSERT INTO receipts (run_id, receipt_id, node_id, number, verdict, receipt_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
@@ -885,7 +1163,7 @@ impl Tx<'_> {
 
     /// Insert a gate packet row.
     pub fn insert_gate_packet(&self, packet: &GatePacket) -> Result<(), StoreError> {
-        let json = serde_json::to_string(packet).map_err(|e| StoreError::Corrupt(e.to_string()))?;
+        let json = serde_json::to_string(packet).map_err(corrupt)?;
         json_len_checked("gate packet", &json)?;
         self.inner
             .execute(
@@ -899,7 +1177,10 @@ impl Tx<'_> {
             )
             .map_err(|e| {
                 if is_constraint(&e) {
-                    StoreError::Duplicate(format!("gate packet {} (or its run is missing)", packet.id))
+                    StoreError::Duplicate(format!(
+                        "gate packet {} (or its run is missing)",
+                        packet.id
+                    ))
                 } else {
                     StoreError::Sqlite(e)
                 }
@@ -913,8 +1194,7 @@ impl Tx<'_> {
         run_id: &RunId,
         decision: &GateDecision,
     ) -> Result<(), StoreError> {
-        let json =
-            serde_json::to_string(decision).map_err(|e| StoreError::Corrupt(e.to_string()))?;
+        let json = serde_json::to_string(decision).map_err(corrupt)?;
         json_len_checked("gate decision", &json)?;
         let result = self.inner.execute(
             "INSERT INTO gate_decisions (run_id, packet_id, decision, decision_json) VALUES (?1, ?2, ?3, ?4)",
@@ -975,12 +1255,80 @@ impl Tx<'_> {
             )
             .map_err(|e| {
                 if is_constraint(&e) {
-                    StoreError::Duplicate(format!("artifact {} (or its run is missing)", artifact.digest))
+                    StoreError::Duplicate(format!(
+                        "artifact {} (or its run is missing)",
+                        artifact.digest
+                    ))
                 } else {
                     StoreError::Sqlite(e)
                 }
             })?;
         Ok(())
+    }
+
+    /// The next fencing token for a run: one more than any issued so far.
+    pub fn next_fence(&self, run_id: &RunId) -> Result<u64, StoreError> {
+        let max: i64 = self.inner.query_row(
+            "SELECT COALESCE(MAX(fence), 0) FROM claims WHERE run_id = ?1",
+            params![run_id.as_str()],
+            |r| r.get(0),
+        )?;
+        Ok(u64::try_from(max).unwrap_or_default() + 1)
+    }
+
+    /// Insert an active claim row.
+    pub fn insert_claim(&self, claim: &ClaimRow) -> Result<(), StoreError> {
+        let deps = serde_json::to_string(&claim.dependency_receipts).map_err(corrupt)?;
+        let resources = serde_json::to_string(&claim.resources).map_err(corrupt)?;
+        self.inner
+            .execute(
+                "INSERT INTO claims (run_id, node_id, number, owner, fence, dependency_json, resources_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![
+                    claim.run_id.as_str(),
+                    claim.node_id.as_str(),
+                    claim.number.get(),
+                    claim.owner,
+                    i64::try_from(claim.fence).unwrap_or(i64::MAX),
+                    deps,
+                    resources
+                ],
+            )
+            .map_err(|e| {
+                if is_constraint(&e) {
+                    StoreError::Duplicate(format!(
+                        "claim on {}/{}#{} (or its run is missing)",
+                        claim.run_id, claim.node_id, claim.number
+                    ))
+                } else {
+                    StoreError::Sqlite(e)
+                }
+            })?;
+        Ok(())
+    }
+
+    /// Release the active claim on an attempt, but only if it still carries
+    /// `fence`. Returns whether a row was released; `false` means the claim
+    /// was already released or carries another token.
+    pub fn release_claim(
+        &self,
+        run_id: &RunId,
+        node_id: &NodeId,
+        number: u32,
+        fence: u64,
+        release: &str,
+    ) -> Result<bool, StoreError> {
+        let changed = self.inner.execute(
+            "UPDATE claims SET active = 0, release = ?5, released_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+              WHERE run_id = ?1 AND node_id = ?2 AND number = ?3 AND fence = ?4 AND active = 1",
+            params![
+                run_id.as_str(),
+                node_id.as_str(),
+                number,
+                i64::try_from(fence).unwrap_or(i64::MAX),
+                release
+            ],
+        )?;
+        Ok(changed == 1)
     }
 
     /// Number of rows in `table`, inside this transaction.

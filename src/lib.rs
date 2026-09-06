@@ -12,6 +12,7 @@ pub mod contracts;
 pub mod deps;
 pub mod digests;
 pub mod graph;
+pub mod scheduler;
 pub mod state;
 pub mod store;
 pub mod validation;

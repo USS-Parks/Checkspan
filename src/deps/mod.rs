@@ -24,7 +24,7 @@ use crate::contracts::{
     Timestamp, TypeRef, Verdict,
 };
 use crate::state::RunState;
-use crate::store::{Store, StoreError};
+use crate::store::{Ledger, StoreError};
 
 /// Where a resolved dependency's receipt comes from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -171,7 +171,7 @@ pub struct DependencyService<'a> {
     spec: &'a GraphSpec,
     run: &'a GraphRun,
     state: &'a RunState,
-    store: &'a Store,
+    store: &'a dyn Ledger,
     now: &'a Timestamp,
 }
 
@@ -182,7 +182,7 @@ impl<'a> DependencyService<'a> {
         spec: &'a GraphSpec,
         run: &'a GraphRun,
         state: &'a RunState,
-        store: &'a Store,
+        store: &'a dyn Ledger,
         now: &'a Timestamp,
     ) -> Self {
         DependencyService {
