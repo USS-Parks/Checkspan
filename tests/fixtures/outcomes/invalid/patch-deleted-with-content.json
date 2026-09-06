@@ -1,0 +1,28 @@
+{
+  "record": "patch_result",
+  "schema_version": 1,
+  "repository": {
+    "root_commits": [
+      "b6439fecdedeb8f840d8e152de731821b0d8dcba"
+    ]
+  },
+  "base_commit": "13ad52110ee91ac2b330b9ffc62f91de82487ee1",
+  "candidate": {
+    "kind": "commit",
+    "commit": "7e5e34d28f76c966c14b1fe152de6b01ce85f53b",
+    "patch_digest": "sha256:5a3bf8026112a51129fa16a048090f16edf6b6b46b2283424ef724207ce04c83"
+  },
+  "changes": [
+    {
+      "path": "docs/old.md",
+      "change": "deleted",
+      "content_digest": "sha256:1afe9973bc88e19065efa92c68f873d5c8436c344948d1b05c0c4b2bb42ae4cd",
+      "size": 30
+    }
+  ],
+  "captured_at": "2026-09-06T12:00:00Z",
+  "tool": {
+    "name": "git",
+    "version": "2.54.0"
+  }
+}

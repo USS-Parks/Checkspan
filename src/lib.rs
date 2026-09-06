@@ -7,6 +7,7 @@
 
 #![warn(missing_docs)]
 
+pub mod adapters;
 pub mod budget;
 pub mod cli;
 pub mod contracts;

@@ -8,10 +8,10 @@ mod common;
 use std::collections::HashSet;
 
 use checkspan::contracts::{
-    ActionKind, ActionRequest, AssessmentOutcome, Attempt, AttemptError, ContractError,
-    DecisionKind, ExecutionOutcome, GateDecision, GateError, GatePacket, GatePurpose, NodeStatus,
-    NodeView, ProvenanceLevel, ReceiptError, Record, RecordKind, Verdict, VerifierReceipt,
-    ViewError, parse_record,
+    ActionKind, ActionRequest, AssessmentOutcome, Attempt, AttemptError, CandidateKind, ChangeKind,
+    ContractError, DecisionKind, ExecutionOutcome, GateDecision, GateError, GatePacket,
+    GatePurpose, NodeStatus, NodeView, PatchResult, ProvenanceLevel, ReceiptError, Record,
+    RecordKind, Verdict, VerifierReceipt, ViewError, parse_record,
 };
 use common::{fixture, fixture_names, schema_errors};
 use serde_json::Value;
@@ -32,6 +32,7 @@ fn record_kind(text: &str) -> &'static str {
         Some("gate_packet") => "gate_packet",
         Some("gate_decision") => "gate_decision",
         Some("node_view") => "node_view",
+        Some("patch_result") => "patch_result",
         other => panic!("unknown record kind {other:?}"),
     }
 }
@@ -42,6 +43,7 @@ fn schema_for(text: &str) -> &'static str {
         "verifier_receipt" => VerifierReceipt::SCHEMA_ID,
         "gate_packet" => GatePacket::SCHEMA_ID,
         "gate_decision" => GateDecision::SCHEMA_ID,
+        "patch_result" => PatchResult::SCHEMA_ID,
         _ => NodeView::SCHEMA_ID,
     }
 }
@@ -71,6 +73,12 @@ fn parse_and_check(text: &str) -> Result<Vec<String>, ContractError> {
         "gate_decision" => {
             let r: GateDecision = parse_record(text)?;
             let again: GateDecision = parse_record(&serde_json::to_string(&r).unwrap()).unwrap();
+            assert_eq!(r, again);
+            r.check_bindings().iter().map(ToString::to_string).collect()
+        }
+        "patch_result" => {
+            let r: PatchResult = parse_record(text)?;
+            let again: PatchResult = parse_record(&serde_json::to_string(&r).unwrap()).unwrap();
             assert_eq!(r, again);
             r.check_bindings().iter().map(ToString::to_string).collect()
         }
@@ -135,6 +143,8 @@ fn golden_fixtures_cover_every_variant() {
     let mut decisions = HashSet::new();
     let mut assessments = HashSet::new();
     let mut statuses = HashSet::new();
+    let mut candidates = HashSet::new();
+    let mut changes = HashSet::new();
     let names = fixture_names("outcomes/valid");
     for name in &names {
         let text = valid(name);
@@ -169,12 +179,34 @@ fn golden_fixtures_cover_every_variant() {
                     assessments.insert(a.outcome);
                 }
             }
+            "patch_result" => {
+                let p: PatchResult = parse_record(&text).unwrap();
+                candidates.insert(p.candidate.kind);
+                changes.extend(p.changes.iter().map(|c| c.change));
+            }
             _ => {
                 let v: NodeView = parse_record(&text).unwrap();
                 statuses.insert(v.status);
             }
         }
     }
+    assert_eq!(
+        candidates,
+        [CandidateKind::Commit, CandidateKind::WorkingTree]
+            .into_iter()
+            .collect()
+    );
+    assert_eq!(
+        changes,
+        [
+            ChangeKind::Added,
+            ChangeKind::Modified,
+            ChangeKind::Deleted,
+            ChangeKind::Untracked,
+        ]
+        .into_iter()
+        .collect()
+    );
     assert_eq!(outcomes, ExecutionOutcome::ALL.into_iter().collect());
     assert_eq!(verdicts, Verdict::ALL.into_iter().collect());
     assert_eq!(levels, ProvenanceLevel::ALL.into_iter().collect());
@@ -182,7 +214,7 @@ fn golden_fixtures_cover_every_variant() {
     assert_eq!(decisions, DecisionKind::ALL.into_iter().collect());
     assert_eq!(assessments, AssessmentOutcome::ALL.into_iter().collect());
     assert_eq!(statuses, NodeStatus::ALL.into_iter().collect());
-    assert_eq!(names.len(), 28);
+    assert_eq!(names.len(), 30);
 }
 
 #[test]
@@ -527,4 +559,9 @@ fn node_view_status_rules() {
     let gated: NodeView = parse_record(&valid("view-gated.json")).unwrap();
     assert_eq!(gated.waiting_on_gate.unwrap().as_str(), "gate-0001");
     let _: Vec<AttemptError> = Vec::new();
+}
+
+#[test]
+fn a_patch_result_deletion_cannot_carry_content() {
+    assert_binding_only_rejects("patch-deleted-with-content.json", "carries content");
 }

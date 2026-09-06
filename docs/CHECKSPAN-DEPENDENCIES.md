@@ -40,6 +40,8 @@ CS-07: no dependency change. Native Linux acceptance used the same pinned toolch
 
 CS-10 through CS-14: no dependency change.
 
+CS-15: no crate dependency change. The code adapter runs the installed `git` executable as a child process (2.54.0.windows.1 on the development machine, 2.53.0 in the WSL clone, runner-provided in CI); it is a prerequisite already recorded above, not a crate, and Checkspan pins the configuration that affects its output on every invocation.
+
 CS-09: adds `rusqlite` 0.40.2 with `bundled` (published 2026-08-08; 120 lockfile entries after the change; new transitive crates `libsqlite3-sys`, `hashlink`, `fallible-iterator`, `fallible-streaming-iterator`, `bitflags`, `smallvec`, `allocator-api2`, `equivalent`). Bundled SQLite compiles with the MSVC and GNU C toolchains already required for the build. `cargo deny check` and `cargo audit` pass.
 
 CS-08: adds `sha2` and `serde_json_canonicalizer` (both published within the last six months; 105 lockfile entries after the change; new transitive crates `ryu-js`, `digest`, `block-buffer`, `hybrid-array`, `typenum`, `const-oid`, `crypto-common`, `cfg-if`, `cpufeatures`). `cargo deny check` and `cargo audit` pass. `tests/fixtures/canonical/rfc_*.json` reproduce the examples in RFC 8785 sections 3.2.2 and 3.2.3 as shipped in the canonicalizer's test resources; `crosscheck.json` is generated independently with Python's `json.dumps` and `hashlib`.

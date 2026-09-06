@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://checkspan.invalid/schemas/v1/patch-result.schema.json",
+  "title": "PatchResult",
+  "description": "The exact local candidate a software check runs against: the repository named by its root commits, the base commit, the candidate commit or working tree resting on a commit, and every changed path with the digest of its candidate content. It establishes that a typed candidate exists against the pinned base, nothing about its quality.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["record", "schema_version", "repository", "base_commit", "candidate", "changes", "captured_at", "tool"],
+  "properties": {
+    "record": { "const": "patch_result" },
+    "schema_version": { "const": 1 },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root_commits"],
+      "properties": {
+        "root_commits": {
+          "description": "Every parentless commit reachable from the candidate, sorted.",
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/commit" }
+        }
+      }
+    },
+    "base_commit": { "$ref": "#/$defs/commit" },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "commit", "patch_digest"],
+      "properties": {
+        "kind": { "enum": ["commit", "working_tree"] },
+        "commit": {
+          "description": "The candidate commit, or the commit a working tree rests on.",
+          "$ref": "#/$defs/commit"
+        },
+        "patch_digest": {
+          "description": "Digest of the textual patch from the base to the candidate under pinned diff options; untracked files are identified through changes instead.",
+          "$ref": "common.schema.json#/$defs/digest"
+        }
+      }
+    },
+    "changes": {
+      "description": "Every path that differs between the base and the candidate, sorted by path.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "change"],
+        "properties": {
+          "path": {
+            "description": "Path relative to the repository root, /-separated, as Git reports it.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "change": { "enum": ["added", "modified", "deleted", "untracked"] },
+          "content_digest": {
+            "description": "Digest of the candidate content; absent exactly for deletions.",
+            "$ref": "common.schema.json#/$defs/digest"
+          },
+          "size": {
+            "description": "Size in bytes of the candidate content; absent exactly for deletions.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        }
+      }
+    },
+    "captured_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "git" },
+        "version": { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    }
+  },
+  "$defs": {
+    "commit": {
+      "description": "A Git object name: 40 or 64 lowercase hex digits.",
+      "type": "string",
+      "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$"
+    }
+  }
+}

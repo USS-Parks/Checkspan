@@ -12,6 +12,7 @@ pub mod gate;
 pub mod graph;
 pub mod ids;
 pub mod node;
+pub mod patch;
 pub mod record;
 pub mod registry;
 pub mod view;
@@ -37,6 +38,10 @@ pub use node::{
     AcceptanceSpec, Dependency, FailureClass, NodeContractError, NodeKind, NodeSpec, OnExhaustion,
     PolicyRef, PortKind, PortSpec, ResourceAccess, ResourceClaim, RetryPolicy, TypeRef,
     VerifierRef,
+};
+pub use patch::{
+    Candidate, CandidateKind, Change, ChangeKind, CommitId, PatchError, PatchResult, PatchSubject,
+    Repository, Tool, is_clean_relative_path,
 };
 pub use record::{
     ContractError, Record, RecordHeader, RecordKind, SchemaVersion, parse_record,

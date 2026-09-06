@@ -17,7 +17,9 @@ use serde::Serialize;
 use serde_json::Value;
 use sha2::{Digest as _, Sha256};
 
-use crate::contracts::{AttemptRef, Digest, EvidenceRef, GraphSpec, NodeSpec, ReceiptRef};
+use crate::contracts::{
+    AttemptRef, Digest, EvidenceRef, GraphSpec, NodeSpec, PatchResult, ReceiptRef,
+};
 use crate::validation::parse::{ParseError, parse_strict, pointer_push};
 
 /// The raw digest algorithm this build produces.
@@ -39,6 +41,8 @@ pub const NODE_SPEC_KIND: &str = "checkspan.node_spec@1";
 pub const INPUT_MANIFEST_KIND: &str = "checkspan.input_manifest@1";
 /// Envelope kind of a complete verification context.
 pub const VERIFICATION_CONTEXT_KIND: &str = "checkspan.verification_context@1";
+/// Envelope kind of a patch subject digest.
+pub const PATCH_SUBJECT_KIND: &str = "checkspan.patch_subject@1";
 
 /// Why a value could not be canonicalized.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -152,6 +156,14 @@ pub fn digest_of<T: Serialize>(kind: &str, body: &T) -> Result<Digest, Canonical
     let value =
         serde_json::to_value(&envelope).map_err(|e| CanonicalError::Serialize(e.to_string()))?;
     envelope_digest(&value)
+}
+
+/// Identity of the exact candidate a patch result describes: repository,
+/// base, candidate, and every changed path with its content digest. Capture
+/// time and tool version are not part of it, so recapturing an unchanged
+/// candidate reproduces the digest and any change to the candidate does not.
+pub fn patch_subject_digest(result: &PatchResult) -> Result<Digest, CanonicalError> {
+    digest_of(PATCH_SUBJECT_KIND, &result.subject())
 }
 
 /// Content digest of a graph revision. Two documents that differ only in

@@ -222,6 +222,17 @@ fn describe(record: &ValidatedRecord) -> (&'static str, Value) {
                 "authority_level": decision.authority.level,
             }),
         ),
+        ValidatedRecord::PatchResult(patch) => (
+            "identity",
+            json!({
+                "base_commit": patch.base_commit,
+                "candidate": patch.candidate.kind.as_str(),
+                "commit": patch.candidate.commit,
+                "changes": patch.changes.len(),
+                "subject_digest": crate::digests::patch_subject_digest(patch)
+                    .expect("a valid patch result has a subject digest"),
+            }),
+        ),
         ValidatedRecord::NodeView(view) => (
             "identity",
             json!({

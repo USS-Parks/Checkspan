@@ -24,6 +24,8 @@ pub enum RecordKind {
     GateDecision,
     /// Derived, read-only status of one node within one run.
     NodeView,
+    /// The exact local candidate a software check runs against.
+    PatchResult,
 }
 
 impl RecordKind {
@@ -37,6 +39,7 @@ impl RecordKind {
             RecordKind::GatePacket => "gate_packet",
             RecordKind::GateDecision => "gate_decision",
             RecordKind::NodeView => "node_view",
+            RecordKind::PatchResult => "patch_result",
         }
     }
 }
