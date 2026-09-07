@@ -9,7 +9,7 @@
 - Implementation branch: `codex/checkspan-m1`. Per Basho's instruction of 2026-09-06, every completed prompt is committed on that branch, fast-forwarded into `main`, and both refs are pushed.
 - M2 authorization: **"Run M2 STS" received from Basho on 2026-09-06** after the M1 report; CS-08 through CS-14 are authorized, with the M2 boundary (after CS-14) as the next explicit stop. Basho reiterated: commit and merge to `main` after every prompt.
 - M3 authorization: **"Run M3 STS now please" received from Basho on 2026-09-06** after the M2 report. CS-15 through CS-24, CS-R01 through CS-R12, and CS-25 are authorized in order. Stops that remain inside M3 because the approval named no signer, corpus, model, or budget: first use of Basho's signing identity (CS-22), admission of the pilot corpus (CS-R02), first model endpoint and its egress and usage budget (CS-R05), the evaluation usage budget (CS-R11), and the M3 boundary after CS-25.
-- Current prompt: **CS-16 complete; CS-17 next.**
+- Current prompt: **CS-17 complete; CS-18 next.**
 - Session handoff: see [CHECKSPAN-HANDOFF.md](../CHECKSPAN-HANDOFF.md) at the project root.
 - Implemented product behavior: `checkspan validate <file>` and `checkspan inspect <file>` over any supported record (now including `patch_result`), with graph admission (dependency resolution, port and type compatibility, cycles, hidden proof dependencies, external imports, gate wait chains, target closure, deterministic order) for graph documents; stable JSON output and exit codes; no dispatch, run store, or writes. Library code additionally provides the durable run ledger (M2) and, from CS-15, capture of exact local patch subjects from a Git repository.
 
@@ -482,4 +482,29 @@ No git worktree other than the canonical checkout is registered. No unpublished 
 **Not claimed:** verifier execution against resolved evidence (CS-17/CS-18); receipts for it (CS-19); CLI exposure (CS-20); retrieval and corpus admission (`rag` stays a refused boundary until CS-R02/CS-R03); signed decisions for `human` ports (CS-21/CS-22); the symlink-escape case on this Windows account (no symlink privilege; the code path is platform-independent and runs where symlinks exist); hosted matrix for this commit (queued on push).
 
 **Acceptance:** CS-16 gate passed locally. Implementation commit SHA is recorded in the CS-17 entry.
+**Open blockers:** none.
+
+## CS-17 — Implement the bounded verifier process protocol
+
+**Date:** 2026-09-06.
+**Source SHA before work:** 2f419eb37699a3f52846cf87f2c11a1a45c78c68 (CS-16 implementation commit; `main`).
+
+**Changed paths:** `src/verifier_host/mod.rs` (new); `src/lib.rs`; `Cargo.toml` (a `[[test]]` entry marking the verifier suite `harness = false`); `tests/verifier_process.rs` (new); `tests/fixtures/verifier/{request,response-accept,response-reject,response-wrong-protocol,response-unknown-field}.json` (new); this log; the verification ledger; the dependency record.
+
+**Design as implemented:** a verifier is a separate native process under a pinned profile: explicit executable path (optionally pinned by digest and checked before spawn), exact argument vector, working directory, granted environment, wall-clock ceiling, and stdout/stderr byte ceilings. The host writes one versioned `VerifierRequest` (protocol `Exactly<1>`, pinned verifier, exact attempt, subject, claim, required checks, policy, input-manifest digest, evidence references) to the child's standard input from its own thread and requires exactly one `VerifierResponse` (echoed verifier and attempt, verdict, per-check passed/failed/skipped outcomes, bounded reasons) on standard output, with nothing but whitespace after it. Both records are `deny_unknown_fields`, so an unknown field or a foreign protocol version is refused while parsing. Everything else is a **process failure distinct from any verdict**: a mismatched executable digest (never spawned), spawn failure, timeout, cancellation, nonzero exit (even after printing a valid response), output past the ceiling, malformed output, trailing output, and an echo mismatch. The environment is scrubbed with an explicit clear: the child sees only `SystemRoot` (Windows process minimum), scratch variables pointed at the profile's working directory, and the granted pairs. Pipes are drained on their own threads with the ceiling applied while reading, so an over-talkative child is killed rather than deadlocked, and overflow is re-checked at join so a child that exits quickly cannot slip an oversized stream past the poll loop. Timeout and cancellation kill the whole process tree: Windows through `taskkill /T /F` with an explicit argument vector, Unix by spawning the child as its own process group and signalling the group. No shell interprets anything anywhere. This is trusted-local execution; the module says so and claims no sandboxing.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed |
+| `cargo test --locked` | passed: 157 harness tests + 12 verifier process cases (the suite runs without the libtest harness so the same binary can serve as the protocol child with a clean standard output) |
+| `cargo deny check` / `cargo audit` | not rerun; no crate dependency change since CS-09 |
+
+**Gate evidence (V1/V4, real native processes; the test binary is the child, its mode set by a granted environment variable):** an accepting and a rejecting verifier round-trip with echoed identity, per-check outcomes, captured bounded standard error, and a duration; a child that prints a *valid accept response* and then exits 3 is a nonzero-exit failure, never a verdict; non-protocol output and a valid response followed by trailing bytes are malformed-output and extra-output failures; 320 KiB of output against a 64 KiB ceiling is an output-too-large failure whether caught live or at exit; a hanging child times out at its 600 ms ceiling, and the grandchild it spawned (writing heartbeats to a file) stops writing after the tree kill — the heartbeat file's size is stable across two later samples; cancellation from another thread kills a hanging child in well under its timeout; the child reports `PATH` and `CARGO_MANIFEST_DIR` absent, the granted variable visible, and scratch pointed at the profile's working directory, the working directory equals the profile's, and a secret sentinel never granted appears in no retained output; a response echoing a different attempt is an echo-mismatch failure; a profile pinning a different executable digest never spawns; the protocol fixtures parse, round-trip, and the wrong-protocol and unknown-field fixtures are refused while parsing.
+
+**Not claimed:** no sandboxing or containment of a hostile verifier (trusted-local scope, recorded in the module and the PSPR); no store writes or receipts (CS-19 maps failures to execution outcomes and admits receipts); no real software checks (CS-18); required-check coverage rules on an accepting response (CS-18/CS-19 own them); hosted matrix for this commit (queued on push).
+
+**Acceptance:** CS-17 gate passed locally. Implementation commit SHA is recorded in the CS-18 entry.
 **Open blockers:** none.

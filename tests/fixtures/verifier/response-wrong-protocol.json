@@ -1,0 +1,33 @@
+{
+  "protocol": 2,
+  "verifier": {
+    "id": "software_check",
+    "version": 1,
+    "digest": "sha256:a1273c3f05962e7237f01628ee6884e16ed4b95e0c7cea49fe690167e1a84721"
+  },
+  "attempt": {
+    "run_id": "run-0001",
+    "node": {
+      "graph_id": "evidence_pilot",
+      "node_id": "cs_ci",
+      "revision": 1
+    },
+    "number": 1
+  },
+  "verdict": "accept",
+  "checks": [
+    {
+      "id": "fmt",
+      "outcome": "passed"
+    },
+    {
+      "id": "clippy",
+      "outcome": "passed"
+    },
+    {
+      "id": "test",
+      "outcome": "passed"
+    }
+  ],
+  "reason_text": "all required checks passed"
+}

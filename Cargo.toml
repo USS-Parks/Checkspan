@@ -28,3 +28,7 @@ sha2 = "0.11.0"
 
 [lints.rust]
 unsafe_code = "forbid"
+
+[[test]]
+name = "verifier_process"
+harness = false

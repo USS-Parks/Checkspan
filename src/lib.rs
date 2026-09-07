@@ -19,3 +19,4 @@ pub mod scheduler;
 pub mod state;
 pub mod store;
 pub mod validation;
+pub mod verifier_host;
