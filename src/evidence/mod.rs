@@ -931,25 +931,23 @@ fn code_locator(root: &Path, base: &CommitId, kind: CandidateKind, commit: &Comm
     )
 }
 
-fn parse_code_locator(port: &Ident, locator: &str) -> Result<(PathBuf, Selection), EvidenceError> {
-    let bad = || EvidenceError::BadLocator {
-        port: port.clone(),
-        locator: locator.to_owned(),
-    };
-    let rest = locator.strip_prefix("git:").ok_or_else(bad)?;
-    let (root, query) = rest.rsplit_once('#').ok_or_else(bad)?;
-    let (base, candidate) = query.split_once('&').ok_or_else(bad)?;
-    let base = base.strip_prefix("base=").ok_or_else(bad)?;
-    let candidate = candidate.strip_prefix("candidate=").ok_or_else(bad)?;
-    let (kind, commit) = candidate.split_once(':').ok_or_else(bad)?;
-    let commit = CommitId::new(commit).map_err(|_| bad())?;
-    CommitId::new(base).map_err(|_| bad())?;
+/// The repository and selection a `code` locator names, when the locator is
+/// in the form this build writes.
+pub fn code_selection(locator: &str) -> Option<(PathBuf, Selection)> {
+    let rest = locator.strip_prefix("git:")?;
+    let (root, query) = rest.rsplit_once('#')?;
+    let (base, candidate) = query.split_once('&')?;
+    let base = base.strip_prefix("base=")?;
+    let candidate = candidate.strip_prefix("candidate=")?;
+    let (kind, commit) = candidate.split_once(':')?;
+    let commit = CommitId::new(commit).ok()?;
+    CommitId::new(base).ok()?;
     let selector = match kind {
         "commit" => Selector::Commit(commit.to_string()),
         "working_tree" => Selector::WorkingTree,
-        _ => return Err(bad()),
+        _ => return None,
     };
-    Ok((
+    Some((
         PathBuf::from(root),
         Selection {
             candidate: selector,
@@ -958,6 +956,12 @@ fn parse_code_locator(port: &Ident, locator: &str) -> Result<(PathBuf, Selection
     ))
 }
 
+fn parse_code_locator(port: &Ident, locator: &str) -> Result<(PathBuf, Selection), EvidenceError> {
+    code_selection(locator).ok_or_else(|| EvidenceError::BadLocator {
+        port: port.clone(),
+        locator: locator.to_owned(),
+    })
+}
 fn same_directory(a: &Path, b: &Path) -> bool {
     match (fs::canonicalize(a), fs::canonicalize(b)) {
         (Ok(a), Ok(b)) => a == b,

@@ -72,7 +72,7 @@
       "result_type": {
         "schema_id": "software_check_result",
         "version": 1,
-        "digest": "sha256:0becd597a566edc0c39157dcd20e1a9b27aea5eefaa175688a551cee7b0f6866"
+        "digest": "sha256:3b8e4d6ab33aa7cde1fa48b7f876623fd1cb2c6496d55add2e1c729ae5c42931"
       },
       "acceptance": {
         "claim": "cs_down satisfies its named checks for the exact candidate.",

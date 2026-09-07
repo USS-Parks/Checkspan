@@ -43,6 +43,7 @@ pub const SCHEMAS: &[BundledSchema] = bundled![
     "gate-decision.schema.json",
     "node-view.schema.json",
     "patch-result.schema.json",
+    "software-check-result.schema.json",
 ];
 
 /// Record kinds and versions this build can parse, with their schema `$id`.
@@ -86,6 +87,11 @@ pub const SUPPORTED: &[(RecordKind, SchemaVersion, &str)] = &[
         RecordKind::PatchResult,
         SchemaVersion(1),
         "https://checkspan.invalid/schemas/v1/patch-result.schema.json",
+    ),
+    (
+        RecordKind::SoftwareCheckResult,
+        SchemaVersion(1),
+        "https://checkspan.invalid/schemas/v1/software-check-result.schema.json",
     ),
 ];
 

@@ -420,13 +420,13 @@ fn parse_response(bytes: &[u8]) -> Result<VerifierResponse, ProcessFailure> {
 
 /// A pipe drained on its own thread: bytes are kept up to the cap and
 /// discarded past it, so a talkative child never blocks on a full pipe.
-struct BoundedReader {
+pub(crate) struct BoundedReader {
     handle: std::thread::JoinHandle<(Vec<u8>, bool)>,
     overflow: mpsc::Receiver<()>,
     seen_overflow: std::cell::Cell<bool>,
 }
 
-fn bounded_reader<R: Read + Send + 'static>(mut source: R, cap: usize) -> BoundedReader {
+pub(crate) fn bounded_reader<R: Read + Send + 'static>(mut source: R, cap: usize) -> BoundedReader {
     let (sender, overflow) = mpsc::channel();
     let handle = std::thread::spawn(move || {
         let mut kept = Vec::new();
@@ -455,14 +455,14 @@ fn bounded_reader<R: Read + Send + 'static>(mut source: R, cap: usize) -> Bounde
 }
 
 impl BoundedReader {
-    fn overflowed(&self) -> bool {
+    pub(crate) fn overflowed(&self) -> bool {
         if self.overflow.try_recv().is_ok() {
             self.seen_overflow.set(true);
         }
         self.seen_overflow.get()
     }
 
-    fn finish(self) -> (Vec<u8>, bool) {
+    pub(crate) fn finish(self) -> (Vec<u8>, bool) {
         self.handle.join().unwrap_or_default()
     }
 }
@@ -473,7 +473,7 @@ impl BoundedReader {
 /// explicit argument vector. On Unix the child is spawned as its own process
 /// group and the group is signalled through the `kill` utility. Both are
 /// best-effort cleanup of a trusted-local process, not containment.
-fn kill_tree(child: &mut Child) {
+pub(crate) fn kill_tree(child: &mut Child) {
     #[cfg(windows)]
     {
         let _ = Command::new("taskkill")

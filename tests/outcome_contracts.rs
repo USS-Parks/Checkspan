@@ -9,9 +9,10 @@ use std::collections::HashSet;
 
 use checkspan::contracts::{
     ActionKind, ActionRequest, AssessmentOutcome, Attempt, AttemptError, CandidateKind, ChangeKind,
-    ContractError, DecisionKind, ExecutionOutcome, GateDecision, GateError, GatePacket,
+    Conclusion, ContractError, DecisionKind, ExecutionOutcome, GateDecision, GateError, GatePacket,
     GatePurpose, NodeStatus, NodeView, PatchResult, ProvenanceLevel, ReceiptError, Record,
-    RecordKind, Verdict, VerifierReceipt, ViewError, parse_record,
+    RecordKind, SoftwareCheckOutcome, SoftwareCheckResult, Verdict, VerifierReceipt, ViewError,
+    parse_record,
 };
 use common::{fixture, fixture_names, schema_errors};
 use serde_json::Value;
@@ -33,6 +34,7 @@ fn record_kind(text: &str) -> &'static str {
         Some("gate_decision") => "gate_decision",
         Some("node_view") => "node_view",
         Some("patch_result") => "patch_result",
+        Some("software_check_result") => "software_check_result",
         other => panic!("unknown record kind {other:?}"),
     }
 }
@@ -44,6 +46,7 @@ fn schema_for(text: &str) -> &'static str {
         "gate_packet" => GatePacket::SCHEMA_ID,
         "gate_decision" => GateDecision::SCHEMA_ID,
         "patch_result" => PatchResult::SCHEMA_ID,
+        "software_check_result" => SoftwareCheckResult::SCHEMA_ID,
         _ => NodeView::SCHEMA_ID,
     }
 }
@@ -73,6 +76,13 @@ fn parse_and_check(text: &str) -> Result<Vec<String>, ContractError> {
         "gate_decision" => {
             let r: GateDecision = parse_record(text)?;
             let again: GateDecision = parse_record(&serde_json::to_string(&r).unwrap()).unwrap();
+            assert_eq!(r, again);
+            r.check_bindings().iter().map(ToString::to_string).collect()
+        }
+        "software_check_result" => {
+            let r: SoftwareCheckResult = parse_record(text)?;
+            let again: SoftwareCheckResult =
+                parse_record(&serde_json::to_string(&r).unwrap()).unwrap();
             assert_eq!(r, again);
             r.check_bindings().iter().map(ToString::to_string).collect()
         }
@@ -145,6 +155,8 @@ fn golden_fixtures_cover_every_variant() {
     let mut statuses = HashSet::new();
     let mut candidates = HashSet::new();
     let mut changes = HashSet::new();
+    let mut conclusions = HashSet::new();
+    let mut software_outcomes = HashSet::new();
     let names = fixture_names("outcomes/valid");
     for name in &names {
         let text = valid(name);
@@ -184,6 +196,11 @@ fn golden_fixtures_cover_every_variant() {
                 candidates.insert(p.candidate.kind);
                 changes.extend(p.changes.iter().map(|c| c.change));
             }
+            "software_check_result" => {
+                let r: SoftwareCheckResult = parse_record(&text).unwrap();
+                conclusions.insert(r.conclusion);
+                software_outcomes.extend(r.checks.iter().map(|c| c.outcome));
+            }
             _ => {
                 let v: NodeView = parse_record(&text).unwrap();
                 statuses.insert(v.status);
@@ -207,6 +224,11 @@ fn golden_fixtures_cover_every_variant() {
         .into_iter()
         .collect()
     );
+    assert_eq!(conclusions, Conclusion::ALL.into_iter().collect());
+    assert_eq!(
+        software_outcomes,
+        SoftwareCheckOutcome::ALL.into_iter().collect()
+    );
     assert_eq!(outcomes, ExecutionOutcome::ALL.into_iter().collect());
     assert_eq!(verdicts, Verdict::ALL.into_iter().collect());
     assert_eq!(levels, ProvenanceLevel::ALL.into_iter().collect());
@@ -214,7 +236,7 @@ fn golden_fixtures_cover_every_variant() {
     assert_eq!(decisions, DecisionKind::ALL.into_iter().collect());
     assert_eq!(assessments, AssessmentOutcome::ALL.into_iter().collect());
     assert_eq!(statuses, NodeStatus::ALL.into_iter().collect());
-    assert_eq!(names.len(), 30);
+    assert_eq!(names.len(), 32);
 }
 
 #[test]
@@ -564,4 +586,9 @@ fn node_view_status_rules() {
 #[test]
 fn a_patch_result_deletion_cannot_carry_content() {
     assert_binding_only_rejects("patch-deleted-with-content.json", "carries content");
+}
+
+#[test]
+fn a_software_result_cannot_conclude_accept_over_a_failed_check() {
+    assert_binding_only_rejects("software-accept-with-failure.json", "is not passed");
 }

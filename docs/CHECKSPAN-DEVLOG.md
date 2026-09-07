@@ -9,7 +9,7 @@
 - Implementation branch: `codex/checkspan-m1`. Per Basho's instruction of 2026-09-06, every completed prompt is committed on that branch, fast-forwarded into `main`, and both refs are pushed.
 - M2 authorization: **"Run M2 STS" received from Basho on 2026-09-06** after the M1 report; CS-08 through CS-14 are authorized, with the M2 boundary (after CS-14) as the next explicit stop. Basho reiterated: commit and merge to `main` after every prompt.
 - M3 authorization: **"Run M3 STS now please" received from Basho on 2026-09-06** after the M2 report. CS-15 through CS-24, CS-R01 through CS-R12, and CS-25 are authorized in order. Stops that remain inside M3 because the approval named no signer, corpus, model, or budget: first use of Basho's signing identity (CS-22), admission of the pilot corpus (CS-R02), first model endpoint and its egress and usage budget (CS-R05), the evaluation usage budget (CS-R11), and the M3 boundary after CS-25.
-- Current prompt: **CS-17 complete; CS-18 next.**
+- Current prompt: **CS-18 complete; CS-19 next.**
 - Session handoff: see [CHECKSPAN-HANDOFF.md](../CHECKSPAN-HANDOFF.md) at the project root.
 - Implemented product behavior: `checkspan validate <file>` and `checkspan inspect <file>` over any supported record (now including `patch_result`), with graph admission (dependency resolution, port and type compatibility, cycles, hidden proof dependencies, external imports, gate wait chains, target closure, deterministic order) for graph documents; stable JSON output and exit codes; no dispatch, run store, or writes. Library code additionally provides the durable run ledger (M2) and, from CS-15, capture of exact local patch subjects from a Git repository.
 
@@ -507,4 +507,31 @@ No git worktree other than the canonical checkout is registered. No unpublished 
 **Not claimed:** no sandboxing or containment of a hostile verifier (trusted-local scope, recorded in the module and the PSPR); no store writes or receipts (CS-19 maps failures to execution outcomes and admits receipts); no real software checks (CS-18); required-check coverage rules on an accepting response (CS-18/CS-19 own them); hosted matrix for this commit (queued on push).
 
 **Acceptance:** CS-17 gate passed locally. Implementation commit SHA is recorded in the CS-18 entry.
+**Open blockers:** none.
+
+## CS-18 — Implement the first software-check verifier
+
+**Date:** 2026-09-06.
+**Source SHA before work:** 4531627c5a45376ba603a5ea1476b3d31fee66d1 (CS-17 docs correction; `main`; the CS-17 implementation commit is 8abf4a17ad05c33ef7054debc79b96104d2da816).
+
+**Changed paths:** `src/contracts/software.rs` (new record type); `schemas/v1/software-check-result.schema.json` (new); `src/verifiers/{mod.rs,software.rs}` (new); `src/verifier_host/mod.rs` (reader and kill helpers made crate-visible); `src/evidence/mod.rs` (`code_selection` made public); `src/cli.rs` (`software-verifier` protocol-child subcommand); `src/contracts/{mod.rs,record.rs,registry.rs}`; `src/validation/mod.rs`; `src/lib.rs`; `tests/software_verifier.rs` (new); `tests/outcome_contracts.rs`; new outcome fixtures (`software-result-{accept,reject}.json`, `software-accept-with-failure.json`); 47 fixture and example files whose `software_check_result` type digests now name the real bundled schema; this log; the verification ledger; the dependency record.
+
+**Design as implemented:** the software verifier is a protocol child of this same binary (`checkspan software-verifier --profile <file> --out <file>`), spawned by a controller under a CS-17 host profile; being one executable changes distribution, not the trust boundary. What runs comes from a **pinned validation profile** — a typed document (verifier id and version, check definitions with explicit program path, argument vector, granted environment, and per-check timeout) whose exact bytes must hash to the verifier digest the contract pinned. The profile is an approved document outside the candidate: the candidate cannot choose or alter the programs that run, only make them pass or fail, and weakening the profile changes the pinned identity, so a tampered profile is refused before a single check runs. The candidate comes from the request's one piece of code evidence; the verifier re-captures **the working tree against the frozen base** before and after the checks, whatever the frozen candidate kind, so a commit candidate requires a clean checkout at that commit and any mid-check edit changes the captured subject. A mismatch at the start (stale evidence) or a change across the run ends the process with a subject exit code and no result. Checks run in the checkout with a scrubbed environment plus the profile's grants, bounded output, and a tree-kill on timeout; each records its actual exit code, outcome (`passed`/`failed`/`timed_out`), duration, and stdout/stderr digests. The typed `software_check_result@1` binds attempt, subject, candidate, base, repository roots, profile, environment, required checks, and per-check facts; its contract check refuses `accept` over any non-passed or missing required check and `reject` with nothing failed, and the record is registered, schema-validated, and inspectable like every other record.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed |
+| `cargo test --locked` | passed: 167 harness tests (157 prior + 9 software verifier + 1 outcome contract) + 12 verifier process cases |
+| `cargo deny check` / `cargo audit` | not rerun; no crate dependency change since CS-09 |
+
+**Gate evidence (V1/V4, three real process levels: test → `checkspan software-verifier` → check processes, on real repositories):** a passing candidate yields an accepted response and a typed result that validates against the bundled schema, round-trips, carries empty bindings, the exact frozen subject, the pinned profile, the real OS and architecture, and exit 0 with durations for both checks; a candidate that weakens the document its pinned check validates fails that check and is rejected with the failing check named, while the profile-owned check still passes; a profile edited after its digest was pinned exits with the profile code before any check and writes no result; a required check with no pinned definition exits with the contract code; a hanging check is tree-killed at its 500 ms ceiling and recorded as timed out with no exit code and its duration, rejecting the run; a check that edits the candidate and exits cleanly is caught by the post-run recapture, which exits with the subject code and leaves no result; a checkout that drifted after freezing is refused before any check runs; and the golden fixtures cover both conclusions and all three check outcomes while a result concluding accept over a failed check is refused by its contract check.
+
+**Semantics worth knowing:** the verifier needs `PATH` granted in its host profile so it can find `git` and the platform's process utilities; the checks themselves do not inherit it. The verifier's `VerifierRef` digest is the profile document's digest, so profile revisions are new verifier identities by construction. A timed-out check is not a candidate content failure but never a pass; it concludes `reject`, and CS-13's failure classes decide whether that routes to retry.
+
+**Not claimed:** receipt admission for these results (CS-19); CLI run workflow (CS-20); the checks in these tests validate documents rather than build software — the pinned-profile mechanism is what CS-18 establishes, and the M3 pilot's real profile (fmt, clippy, test over a real project) arrives with CS-24's sample project; hosted matrix for this commit (queued on push).
+
+**Acceptance:** CS-18 gate passed locally. Implementation commit SHA is recorded in the CS-19 entry.
 **Open blockers:** none.

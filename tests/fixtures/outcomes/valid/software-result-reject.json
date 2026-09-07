@@ -1,0 +1,67 @@
+{
+  "record": "software_check_result",
+  "schema_version": 1,
+  "attempt": {
+    "run_id": "run-0001",
+    "node": {
+      "graph_id": "review_pilot",
+      "node_id": "cs_ci",
+      "revision": 2
+    },
+    "number": 1
+  },
+  "subject": "patch_subject:sha256:29f2b2170924d2de17e891536f8511fecefecb0c7dac709a92c3f01f28e90b82",
+  "candidate": {
+    "kind": "commit",
+    "commit": "266ec841a313476ea6cf2d7e453e490ae0585e54",
+    "patch_digest": "sha256:cb6d53778ee066ce09befdca170120166e1b7b515e264ae03e732b16c8608dd7"
+  },
+  "base_commit": "1405df66cbe219b0bf6355bc3d60361a8376b6b4",
+  "repository": {
+    "root_commits": [
+      "dc76e9f0c0006e8f919e0c515c66dbba3982f785"
+    ]
+  },
+  "profile": {
+    "id": "software_check",
+    "version": 1,
+    "digest": "sha256:8e6cb058d1cf01f7af9b76f9a7f749698072863e953ebc2a0f680432a0551220"
+  },
+  "environment": {
+    "os": "windows",
+    "arch": "x86_64"
+  },
+  "required_checks": [
+    "fmt",
+    "clippy",
+    "test"
+  ],
+  "checks": [
+    {
+      "id": "fmt",
+      "outcome": "passed",
+      "duration_ms": 380,
+      "stdout_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exit_code": 0
+    },
+    {
+      "id": "clippy",
+      "outcome": "failed",
+      "duration_ms": 2911,
+      "stdout_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_digest": "sha256:d6d995077e02f48f82cdc403f0272bee86b7a3a471af6b68f297fc7ba1d3d523",
+      "exit_code": 1,
+      "detail": "exit status Some(1)"
+    },
+    {
+      "id": "test",
+      "outcome": "timed_out",
+      "duration_ms": 30000,
+      "stdout_digest": "sha256:9834a14ab9bcaa0f6a8da71073617eac8f004e596a3fa11d807b84631b825d9d",
+      "stderr_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "detail": "timed out after 30000ms"
+    }
+  ],
+  "conclusion": "reject"
+}

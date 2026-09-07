@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://checkspan.invalid/schemas/v1/software-check-result.schema.json",
+  "title": "SoftwareCheckResult",
+  "description": "The typed result of running the required software checks on one exact candidate: the tested subject and commit, the pinned validation profile, the environment, every check's actual exit, outcome, duration, and output digests, and the conclusion the checks support. A conclusion of accept requires every required check present and passed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["record", "schema_version", "attempt", "subject", "candidate", "base_commit", "repository", "profile", "environment", "required_checks", "checks", "conclusion"],
+  "properties": {
+    "record": { "const": "software_check_result" },
+    "schema_version": { "const": 1 },
+    "attempt": { "$ref": "common.schema.json#/$defs/attempt_ref" },
+    "subject": {
+      "description": "The tested candidate's subject: patch_subject: and its digest.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "commit", "patch_digest"],
+      "properties": {
+        "kind": { "enum": ["commit", "working_tree"] },
+        "commit": { "$ref": "patch-result.schema.json#/$defs/commit" },
+        "patch_digest": { "$ref": "common.schema.json#/$defs/digest" }
+      }
+    },
+    "base_commit": { "$ref": "patch-result.schema.json#/$defs/commit" },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root_commits"],
+      "properties": {
+        "root_commits": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "patch-result.schema.json#/$defs/commit" }
+        }
+      }
+    },
+    "profile": {
+      "description": "The pinned validation profile, with the digest of its exact bytes.",
+      "$ref": "common.schema.json#/$defs/verifier_ref"
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["os", "arch"],
+      "properties": {
+        "os": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "arch": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    },
+    "required_checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "common.schema.json#/$defs/identifier" }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "outcome", "duration_ms", "stdout_digest", "stderr_digest"],
+        "properties": {
+          "id": { "$ref": "common.schema.json#/$defs/identifier" },
+          "outcome": { "enum": ["passed", "failed", "timed_out"] },
+          "exit_code": {
+            "description": "The process exit code; absent exactly when the check timed out.",
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 2147483647
+          },
+          "duration_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "stdout_digest": { "$ref": "common.schema.json#/$defs/digest" },
+          "stderr_digest": { "$ref": "common.schema.json#/$defs/digest" },
+          "detail": { "$ref": "common.schema.json#/$defs/text" }
+        }
+      }
+    },
+    "conclusion": { "enum": ["accept", "reject"] }
+  }
+}

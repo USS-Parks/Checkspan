@@ -56,6 +56,18 @@ pub enum Command {
         /// Path to a JSON record document.
         file: PathBuf,
     },
+    /// Run the built-in software-check verifier as a protocol child: one
+    /// request on standard input, one response on standard output, and the
+    /// typed result written to --out. Meant to be spawned by a controller
+    /// under a pinned profile.
+    SoftwareVerifier {
+        /// The pinned validation profile document.
+        #[arg(long)]
+        profile: PathBuf,
+        /// Where the software check result record is written.
+        #[arg(long)]
+        out: PathBuf,
+    },
 }
 
 /// Parse `args`, run the command, print its JSON to stdout, and return the
@@ -68,6 +80,10 @@ where
 {
     match Cli::try_parse_from(args) {
         Ok(cli) => {
+            if let Command::SoftwareVerifier { profile, out } = &cli.command {
+                let code = crate::verifiers::software::run_child(profile, out);
+                return ExitCode::from(code as u8);
+            }
             let (code, output) = execute(&cli.command);
             let mut stdout = std::io::stdout().lock();
             let rendered = serde_json::to_string_pretty(&output).expect("output is JSON");
@@ -90,6 +106,17 @@ pub fn execute(command: &Command) -> (u8, Value) {
             }
             Err(message) => (EXIT_IO, io_error_json("validate", file, &message)),
         },
+        Command::SoftwareVerifier { .. } => (
+            EXIT_USAGE,
+            json!({
+                "command": "software-verifier",
+                "diagnostics": [{
+                    "stage": "usage",
+                    "path": "",
+                    "message": "the software verifier runs as a protocol child; invoke the checkspan binary directly",
+                }],
+            }),
+        ),
         Command::Inspect { file } => match load(file) {
             Ok(report) if report.is_valid() => {
                 let record = report
@@ -231,6 +258,16 @@ fn describe(record: &ValidatedRecord) -> (&'static str, Value) {
                 "changes": patch.changes.len(),
                 "subject_digest": crate::digests::patch_subject_digest(patch)
                     .expect("a valid patch result has a subject digest"),
+            }),
+        ),
+        ValidatedRecord::SoftwareCheckResult(result) => (
+            "identity",
+            json!({
+                "attempt": result.attempt.to_string(),
+                "subject": result.subject,
+                "profile": format!("{}@{}", result.profile.id, result.profile.version),
+                "conclusion": result.conclusion.as_str(),
+                "checks": result.checks.len(),
             }),
         ),
         ValidatedRecord::NodeView(view) => (

@@ -15,6 +15,7 @@ pub mod node;
 pub mod patch;
 pub mod record;
 pub mod registry;
+pub mod software;
 pub mod view;
 
 pub use attempt::{
@@ -46,5 +47,9 @@ pub use patch::{
 pub use record::{
     ContractError, Record, RecordHeader, RecordKind, SchemaVersion, parse_record,
     parse_record_value, read_header,
+};
+pub use software::{
+    CheckExecution, Conclusion, EnvironmentInfo, SoftwareCheckOutcome, SoftwareCheckResult,
+    SoftwareError,
 };
 pub use view::{NodeStatus, NodeView, ViewError};

@@ -17,8 +17,8 @@ use serde_json::Value;
 use crate::contracts::registry;
 use crate::contracts::{
     Attempt, ContractError, GateDecision, GatePacket, GraphRun, GraphSpec, IdentityError, NodeView,
-    PatchResult, Record, RecordHeader, RecordKind, VerifierReceipt, parse_record_value,
-    read_header,
+    PatchResult, Record, RecordHeader, RecordKind, SoftwareCheckResult, VerifierReceipt,
+    parse_record_value, read_header,
 };
 
 pub use parse::{ParseError, ParseErrorKind};
@@ -124,6 +124,8 @@ pub enum ValidatedRecord {
     NodeView(NodeView),
     /// A patch result.
     PatchResult(PatchResult),
+    /// A software check result.
+    SoftwareCheckResult(SoftwareCheckResult),
 }
 
 impl ValidatedRecord {
@@ -138,6 +140,7 @@ impl ValidatedRecord {
             ValidatedRecord::GateDecision(_) => RecordKind::GateDecision,
             ValidatedRecord::NodeView(_) => RecordKind::NodeView,
             ValidatedRecord::PatchResult(_) => RecordKind::PatchResult,
+            ValidatedRecord::SoftwareCheckResult(_) => RecordKind::SoftwareCheckResult,
         }
     }
 }
@@ -395,6 +398,15 @@ fn typed(
                 .collect();
             (ValidatedRecord::PatchResult(patch), diagnostics)
         }
+        RecordKind::SoftwareCheckResult => {
+            let result: SoftwareCheckResult = parse_record_value(value)?;
+            let diagnostics = result
+                .check_bindings()
+                .iter()
+                .map(|e| contract("/checks", e))
+                .collect();
+            (ValidatedRecord::SoftwareCheckResult(result), diagnostics)
+        }
     })
 }
 
@@ -409,5 +421,6 @@ pub fn schema_id_for(kind: RecordKind) -> &'static str {
         RecordKind::GateDecision => GateDecision::SCHEMA_ID,
         RecordKind::NodeView => NodeView::SCHEMA_ID,
         RecordKind::PatchResult => PatchResult::SCHEMA_ID,
+        RecordKind::SoftwareCheckResult => SoftwareCheckResult::SCHEMA_ID,
     }
 }

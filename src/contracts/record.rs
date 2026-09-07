@@ -26,6 +26,8 @@ pub enum RecordKind {
     NodeView,
     /// The exact local candidate a software check runs against.
     PatchResult,
+    /// The typed result of the required software checks on one candidate.
+    SoftwareCheckResult,
 }
 
 impl RecordKind {
@@ -40,6 +42,7 @@ impl RecordKind {
             RecordKind::GateDecision => "gate_decision",
             RecordKind::NodeView => "node_view",
             RecordKind::PatchResult => "patch_result",
+            RecordKind::SoftwareCheckResult => "software_check_result",
         }
     }
 }
