@@ -487,7 +487,7 @@ No git worktree other than the canonical checkout is registered. No unpublished 
 ## CS-17 — Implement the bounded verifier process protocol
 
 **Date:** 2026-09-06.
-**Source SHA before work:** 2f419eb37699a3f52846cf87f2c11a1a45c78c68 (CS-16 implementation commit; `main`).
+**Source SHA before work:** 2f419eb798773dafef91fbdf7110ed772c2ef8b5 (CS-16 implementation commit; `main`).
 
 **Changed paths:** `src/verifier_host/mod.rs` (new); `src/lib.rs`; `Cargo.toml` (a `[[test]]` entry marking the verifier suite `harness = false`); `tests/verifier_process.rs` (new); `tests/fixtures/verifier/{request,response-accept,response-reject,response-wrong-protocol,response-unknown-field}.json` (new); this log; the verification ledger; the dependency record.
 
