@@ -9,7 +9,7 @@
 - Implementation branch: `codex/checkspan-m1`. Per Basho's instruction of 2026-09-06, every completed prompt is committed on that branch, fast-forwarded into `main`, and both refs are pushed.
 - M2 authorization: **"Run M2 STS" received from Basho on 2026-09-06** after the M1 report; CS-08 through CS-14 are authorized, with the M2 boundary (after CS-14) as the next explicit stop. Basho reiterated: commit and merge to `main` after every prompt.
 - M3 authorization: **"Run M3 STS now please" received from Basho on 2026-09-06** after the M2 report. CS-15 through CS-24, CS-R01 through CS-R12, and CS-25 are authorized in order. Stops that remain inside M3 because the approval named no signer, corpus, model, or budget: first use of Basho's signing identity (CS-22), admission of the pilot corpus (CS-R02), first model endpoint and its egress and usage budget (CS-R05), the evaluation usage budget (CS-R11), and the M3 boundary after CS-25.
-- Current prompt: **CS-20 complete; CS-21 next.**
+- Current prompt: **CS-21 complete; CS-22 next. CS-22 is an explicit stop: it needs Basho's signing identity and live signer evidence before its gate can pass.**
 - Session handoff: see [CHECKSPAN-HANDOFF.md](../CHECKSPAN-HANDOFF.md) at the project root.
 - Implemented product behavior: `checkspan validate` and `inspect` over every supported record; `checkspan run create|status|step|drive|cancel` operating the local patch → check workflow against a durable store; and the two built-in protocol-child verifiers (`software-verifier`, `patch-verifier`). The library additionally provides the durable run ledger (M2), candidate capture (CS-15), evidence resolution (CS-16), the verifier host (CS-17), and receipts (CS-19).
 
@@ -587,3 +587,28 @@ No git worktree other than the canonical checkout is registered. No unpublished 
 
 **Acceptance:** CS-20 gate passed locally. Implementation commit SHA is recorded in the CS-21 entry.
 **Open blockers:** none.
+
+## CS-21 — Create bounded human gate packets
+
+**Date:** 2026-09-06.
+**Source SHA before work:** 475e8bb4b982a56327c46a6677b13d36d16ac0f5 (CS-20 implementation commit; `main`).
+
+**Changed paths:** `src/gates/mod.rs` (new); `src/store/mod.rs` (a gate-packet reader); `src/controller/mod.rs` (packets open automatically on the exhausted `gate` route and on an undecidable verdict; `--gate-expiry`); `src/cli.rs` (`run packet`); `src/lib.rs`; `tests/gate_packets.rs` (new); `tests/local_run.rs` and `tests/common/mod.rs` (the pilot graph builder is shared, and the CS-20 expectations follow the new behavior: an exhausted gate route now leaves the node `gated`, not merely reported); this log; the verification ledger; the dependency record.
+
+**Design as implemented:** `open_resolve_work` builds and records a packet in one transaction against the ledger it writes to. The packet carries the original obligation (the node's pinned acceptance claim), sealed context by digest — the exact attempt record, the rejecting or undecidable receipt when one was admitted, and the result artifact — the bounded options (`retry`, `revise`, `cancel`), the `operator_decides` authority policy, creation and expiry instants (expiry must follow creation), and a subject digest over all of it, which a decision will bind to. It applies only to work that is actually stopped: a rejected or failed node, or a gated node with no packet yet (the undecidable case); an open, running, accepted, or already-waiting node refuses, and the reducer's own transition rules are checked before anything is written. The packet waits on the operator, never on the paused node's acceptance — it references sealed context only, and the CS-06 admission rule that rejects a gate joined to the node it resolves by an acceptance chain stands unchanged. The controller opens a packet automatically when the retry policy exhausts to the `gate` route and when an undecidable verdict is admitted; `run packet` prints the newest packet for a node so the operator can review exactly what a decision will sign.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed |
+| `cargo test --locked` | passed: 184 harness tests (180 prior + 4 gate packets) + 12 verifier process cases |
+| `cargo deny check` / `cargo audit` | not rerun; no crate dependency change since CS-09 |
+
+**Gate evidence (V1/V2/V3; the CLI case runs real processes):** an undecidable receipt gates the node, and the packet built for it validates against the bundled schema with empty bindings, carries attempt, receipt, and artifact context by digest, the three bounded options, the operator policy, and an expiry after creation, while a second packet cannot stack and the stored packet reads back byte-identical; a rejected node gates with the rejection receipt as context; a checking node, an accepted node, and an expiry at or before creation each refuse with nothing written; and through the real CLI a failing candidate exhausts its attempts, the drive reports the exhausted route with the packet id, `run status` shows the node `gated` waiting on exactly that packet, `run packet` prints a schema-valid complete packet, and a fresh controller process without a decision does nothing — one idle action and a byte-identical status.
+
+**Not claimed:** decision import and signature verification (CS-22, the next prompt and an explicit stop for signer evidence); `assess_claims` and `authorize_action` purposes (their packets exist as contracts since CS-04; building them live arrives with CS-R09 and the action path with the packet sink); expiry enforcement at decision time (CS-22 checks it against the decision's moment); hosted matrix for this commit (queued on push).
+
+**Acceptance:** CS-21 gate passed locally. Implementation commit SHA is recorded in the CS-22 entry.
+**Open blockers:** none for CS-21. **CS-22 requires Basho's signing identity and live signer evidence; execution pauses there for the explicit signer stop.**

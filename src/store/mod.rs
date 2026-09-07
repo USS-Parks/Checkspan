@@ -476,6 +476,17 @@ fn read_receipt(
     json.map(|j| parse_record(&j).map_err(corrupt)).transpose()
 }
 
+fn read_gate_packets(conn: &Connection, run_id: &RunId) -> Result<Vec<GatePacket>, StoreError> {
+    let mut statement =
+        conn.prepare("SELECT packet_json FROM gate_packets WHERE run_id = ?1 ORDER BY rowid")?;
+    let rows = statement.query_map(params![run_id.as_str()], |r| r.get::<_, String>(0))?;
+    let mut packets = Vec::new();
+    for json in rows {
+        packets.push(parse_record(&json?).map_err(corrupt)?);
+    }
+    Ok(packets)
+}
+
 fn read_attempt(
     conn: &Connection,
     run_id: &RunId,
@@ -897,6 +908,11 @@ impl Store {
             )?;
             Ok(())
         })
+    }
+
+    /// Gate packets recorded for a run, oldest first.
+    pub fn gate_packets(&self, run_id: &RunId) -> Result<Vec<GatePacket>, StoreError> {
+        read_gate_packets(&self.conn, run_id)
     }
 
     /// Record a gate packet and append `gate_opened` in one transaction.

@@ -15,6 +15,7 @@ pub mod controller;
 pub mod deps;
 pub mod digests;
 pub mod evidence;
+pub mod gates;
 pub mod graph;
 pub mod receipts;
 pub mod scheduler;

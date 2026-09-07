@@ -39,6 +39,9 @@ const VERIFIER_TIMEOUT: Duration = Duration::from_secs(600);
 /// Output ceilings for verifier children.
 const VERIFIER_OUTPUT_CAP: usize = 4 << 20;
 
+/// The development-default packet expiry; the CLI can override it.
+pub const DEFAULT_GATE_EXPIRY: &str = "2027-01-01T00:00:00Z";
+
 /// Everything one controller needs to operate a run.
 #[derive(Debug, Clone)]
 pub struct Workspace {
@@ -55,6 +58,8 @@ pub struct Workspace {
     pub artifacts: PathBuf,
     /// This controller's identity.
     pub controller: String,
+    /// When packets this controller opens stop accepting decisions.
+    pub gate_expiry: String,
 }
 
 /// Why a run command failed. Reported as diagnostics; exit code 1.
@@ -162,6 +167,28 @@ pub fn cancel(
         "run_id": run.run_id,
         "node": node,
         "status": "cancelled",
+    }))
+}
+
+/// Print the newest gate packet for one node, for the operator to review.
+pub fn packet(
+    store_path: &Path,
+    graph: &Path,
+    run_id: &str,
+    node_id: &str,
+) -> Result<Value, RunError> {
+    let spec = load_graph(graph)?;
+    let (store, run) = open_run(store_path, &spec, run_id)?;
+    let packets = run_try!(store.gate_packets(&run.run_id), "cannot read packets");
+    let newest = packets
+        .into_iter()
+        .rev()
+        .find(|p| p.node.node_id.as_str() == node_id)
+        .ok_or_else(|| fail(format!("no gate packet exists for {node_id}")))?;
+    Ok(json!({
+        "command": "run-packet",
+        "run_id": run.run_id,
+        "packet": newest,
     }))
 }
 
@@ -310,7 +337,7 @@ fn execute_claim(
                 Some(reason.clone()),
                 now,
             )?;
-            let disposition = retry(store, spec, run, &claim.node_id, now)?;
+            let disposition = retry(ws, store, spec, run, &claim.node_id, now)?;
             return Ok(json!({
                 "action": "attempt_failed",
                 "node": claim.node_id,
@@ -402,7 +429,7 @@ fn execute_claim(
                         Some(reason.clone()),
                         now,
                     )?;
-                    let disposition = retry(store, spec, run, &claim.node_id, now)?;
+                    let disposition = retry(ws, store, spec, run, &claim.node_id, now)?;
                     Ok(json!({
                         "action": "attempt_failed",
                         "node": claim.node_id,
@@ -536,8 +563,16 @@ fn admit_response(
         "receipt": receipt.id,
     });
     if receipt.verdict == crate::contracts::Verdict::Reject {
-        let disposition = retry(store, spec, run, &node.id, now)?;
+        let disposition = retry(ws, store, spec, run, &node.id, now)?;
         report["disposition"] = disposition;
+    }
+    if receipt.verdict == crate::contracts::Verdict::Undecidable {
+        let expires = run_try!(Timestamp::new(ws.gate_expiry.clone()), "gate expiry");
+        let packet = run_try!(
+            crate::gates::open_resolve_work(store, spec, run, &node.id, now, &expires),
+            "cannot open the gate packet"
+        );
+        report["packet"] = json!(packet.id);
     }
     Ok(report)
 }
@@ -692,6 +727,7 @@ fn seal(
 }
 
 fn retry(
+    ws: &Workspace,
     store: &mut Store,
     spec: &GraphSpec,
     run: &crate::contracts::GraphRun,
@@ -712,11 +748,22 @@ fn retry(
             "decision": "retry",
             "class": class,
         }),
-        Disposition::Exhausted { reason, route } => json!({
-            "decision": "exhausted",
-            "reason": reason.to_string(),
-            "route": route,
-        }),
+        Disposition::Exhausted { reason, route } => {
+            let mut report = json!({
+                "decision": "exhausted",
+                "reason": reason.to_string(),
+                "route": route,
+            });
+            if route == crate::contracts::OnExhaustion::Gate {
+                let expires = run_try!(Timestamp::new(ws.gate_expiry.clone()), "gate expiry");
+                let packet = run_try!(
+                    crate::gates::open_resolve_work(store, spec, run, node_id, now, &expires),
+                    "cannot open the gate packet"
+                );
+                report["packet"] = json!(packet.id);
+            }
+            report
+        }
     })
 }
 

@@ -42,7 +42,7 @@ CS-10 through CS-14: no dependency change.
 
 CS-15 and CS-16: no crate dependency change.
 
-CS-17 through CS-20: no crate dependency change. Process-tree cleanup uses the platform's own utilities as child processes with explicit argument vectors: `taskkill` (Windows, in System32) and `kill` (Linux, procps/util-linux); both are present on the supported targets and the CI runner images. The code adapter runs the installed `git` executable as a child process (2.54.0.windows.1 on the development machine, 2.53.0 in the WSL clone, runner-provided in CI); it is a prerequisite already recorded above, not a crate, and Checkspan pins the configuration that affects its output on every invocation.
+CS-17 through CS-21: no crate dependency change. Process-tree cleanup uses the platform's own utilities as child processes with explicit argument vectors: `taskkill` (Windows, in System32) and `kill` (Linux, procps/util-linux); both are present on the supported targets and the CI runner images. The code adapter runs the installed `git` executable as a child process (2.54.0.windows.1 on the development machine, 2.53.0 in the WSL clone, runner-provided in CI); it is a prerequisite already recorded above, not a crate, and Checkspan pins the configuration that affects its output on every invocation.
 
 CS-09: adds `rusqlite` 0.40.2 with `bundled` (published 2026-08-08; 120 lockfile entries after the change; new transitive crates `libsqlite3-sys`, `hashlink`, `fallible-iterator`, `fallible-streaming-iterator`, `bitflags`, `smallvec`, `allocator-api2`, `equivalent`). Bundled SQLite compiles with the MSVC and GNU C toolchains already required for the build. `cargo deny check` and `cargo audit` pass.
 

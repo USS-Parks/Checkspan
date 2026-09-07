@@ -113,6 +113,21 @@ pub enum RunCommand {
     Step(DriveArgs),
     /// Step until the run is complete, blocked, exhausted, or idle.
     Drive(DriveArgs),
+    /// Print the newest gate packet for one node.
+    Packet {
+        /// The ledger file.
+        #[arg(long)]
+        store: PathBuf,
+        /// The graph document; must match the stored revision.
+        #[arg(long)]
+        graph: PathBuf,
+        /// The run.
+        #[arg(long)]
+        run_id: String,
+        /// The gated node.
+        #[arg(long)]
+        node: String,
+    },
     /// Cancel one node, releasing its active claim.
     Cancel {
         /// The ledger file.
@@ -160,6 +175,9 @@ pub struct DriveArgs {
     /// The moment "now", RFC 3339; defaults to a fixed development instant.
     #[arg(long, default_value = "2026-09-06T12:00:00Z")]
     pub now: String,
+    /// When gate packets opened by this controller expire, RFC 3339.
+    #[arg(long, default_value = "2027-01-01T00:00:00Z")]
+    pub gate_expiry: String,
 }
 
 /// Parse `args`, run the command, print its JSON to stdout, and return the
@@ -472,6 +490,12 @@ fn run_command(command: &RunCommand) -> Result<Value, crate::controller::RunErro
         RunCommand::Drive(args) => {
             controller::drive(&workspace(args), &args.run_id, &ts(&args.now)?, 100)
         }
+        RunCommand::Packet {
+            store,
+            graph,
+            run_id,
+            node,
+        } => controller::packet(store, graph, run_id, node),
         RunCommand::Cancel {
             store,
             graph,
@@ -490,5 +514,6 @@ fn workspace(args: &DriveArgs) -> crate::controller::Workspace {
         software_profile: args.software_profile.clone(),
         artifacts: args.artifacts.clone(),
         controller: args.controller.clone(),
+        gate_expiry: args.gate_expiry.clone(),
     }
 }
