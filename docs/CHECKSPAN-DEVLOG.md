@@ -512,7 +512,7 @@ No git worktree other than the canonical checkout is registered. No unpublished 
 ## CS-18 — Implement the first software-check verifier
 
 **Date:** 2026-09-06.
-**Source SHA before work:** 4531627c5a45376ba603a5ea1476b3d31fee66d1 (CS-17 docs correction; `main`; the CS-17 implementation commit is 8abf4a17ad05c33ef7054debc79b96104d2da816).
+**Source SHA before work:** 4531627af1c1ad65c3029162efb4c4ae594b8a1f (CS-17 docs correction; `main`; the CS-17 implementation commit is 8abf4a17ad05c33ef7054debc79b96104d2da816).
 
 **Changed paths:** `src/contracts/software.rs` (new record type); `schemas/v1/software-check-result.schema.json` (new); `src/verifiers/{mod.rs,software.rs}` (new); `src/verifier_host/mod.rs` (reader and kill helpers made crate-visible); `src/evidence/mod.rs` (`code_selection` made public); `src/cli.rs` (`software-verifier` protocol-child subcommand); `src/contracts/{mod.rs,record.rs,registry.rs}`; `src/validation/mod.rs`; `src/lib.rs`; `tests/software_verifier.rs` (new); `tests/outcome_contracts.rs`; new outcome fixtures (`software-result-{accept,reject}.json`, `software-accept-with-failure.json`); 47 fixture and example files whose `software_check_result` type digests now name the real bundled schema; this log; the verification ledger; the dependency record.
 
