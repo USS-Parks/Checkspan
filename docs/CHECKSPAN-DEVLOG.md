@@ -9,7 +9,7 @@
 - Implementation branch: `codex/checkspan-m1`. Per Basho's instruction of 2026-09-06, every completed prompt is committed on that branch, fast-forwarded into `main`, and both refs are pushed.
 - M2 authorization: **"Run M2 STS" received from Basho on 2026-09-06** after the M1 report; CS-08 through CS-14 are authorized, with the M2 boundary (after CS-14) as the next explicit stop. Basho reiterated: commit and merge to `main` after every prompt.
 - M3 authorization: **"Run M3 STS now please" received from Basho on 2026-09-06** after the M2 report. CS-15 through CS-24, CS-R01 through CS-R12, and CS-25 are authorized in order. Stops that remain inside M3 because the approval named no signer, corpus, model, or budget: first use of Basho's signing identity (CS-22), admission of the pilot corpus (CS-R02), first model endpoint and its egress and usage budget (CS-R05), the evaluation usage budget (CS-R11), and the M3 boundary after CS-25.
-- Current prompt: **CS-18 complete; CS-19 next.**
+- Current prompt: **CS-19 complete; CS-20 next.**
 - Session handoff: see [CHECKSPAN-HANDOFF.md](../CHECKSPAN-HANDOFF.md) at the project root.
 - Implemented product behavior: `checkspan validate <file>` and `checkspan inspect <file>` over any supported record (now including `patch_result`), with graph admission (dependency resolution, port and type compatibility, cycles, hidden proof dependencies, external imports, gate wait chains, target closure, deterministic order) for graph documents; stable JSON output and exit codes; no dispatch, run store, or writes. Library code additionally provides the durable run ledger (M2) and, from CS-15, capture of exact local patch subjects from a Git repository.
 
@@ -534,4 +534,29 @@ No git worktree other than the canonical checkout is registered. No unpublished 
 **Not claimed:** receipt admission for these results (CS-19); CLI run workflow (CS-20); the checks in these tests validate documents rather than build software — the pinned-profile mechanism is what CS-18 establishes, and the M3 pilot's real profile (fmt, clippy, test over a real project) arrives with CS-24's sample project; hosted matrix for this commit (queued on push).
 
 **Acceptance:** CS-18 gate passed locally. Implementation commit SHA is recorded in the CS-19 entry.
+**Open blockers:** none.
+
+## CS-19 — Admit and issue verifier receipts
+
+**Date:** 2026-09-06.
+**Source SHA before work:** 3f69a32342b935ecb0348f2f017f6d5955498520 (CS-18 docs correction; `main`; the CS-18 implementation commit is recorded above it).
+
+**Changed paths:** `src/receipts/mod.rs` (new); `src/lib.rs`; `tests/receipt_admission.rs` (new); this log; the verification ledger; the dependency record.
+
+**Design as implemented:** two functions own the receipt path. `issue` turns a protocol response into a `verifier_receipt` bound to the sealed attempt: the response must echo the exact attempt, the **contract** (not the response) supplies the verifier identity — a response from any other verifier cannot even become a receipt — and the context digest is computed over the attempt reference, the full node contract, the input-manifest digest, the pinned dependency receipts, the sealed result digest, and the produced evidence. Provenance is explicit (`local_controller` with a named issuer) and never upgraded. `admit` enforces every binding **inside the transaction that writes**: shape rules, the run, the exact node revision, the pinned verifier (id, version, digest), the policy, receipt freshness, no duplicate id, a sealed attempt whose execution completed with a result (an execution outcome is never a verdict), the frozen candidate subject, the exact result digest, the recomputed context digest, and that the receipt names the node's **current checking attempt** — a receipt after a newer attempt, after another receipt, or on a node past checking is stale. An accepting verdict additionally passes the CS-11 pre-acceptance recheck of every pinned dependency against the same transaction's ledger; a rejection records without it. On any refusal the transaction rolls back: no row, no event, no state change.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed |
+| `cargo test --locked` | passed: 175 harness tests (167 prior + 8 receipt admission) + 12 verifier process cases |
+| `cargo deny check` / `cargo audit` | not rerun; no crate dependency change since CS-09 |
+
+**Gate evidence (V1/V3/V4, real SQLite ledgers; one case with real processes):** a matching accepting receipt admits once and the node is accepted on replay; the identical message again is a duplicate and a re-issued receipt under a fresh id is stale, with row and event counts byte-for-byte unchanged; a rejecting receipt records `rejected` and never accepts; a response from an unpinned verifier cannot be issued and a receipt carrying one, a wrong policy, or lapsed validity is refused with nothing written; a forged result digest, a foreign subject, a context digest over substituted evidence, and a receipt for a never-sealed attempt are each refused by name; after a rejection, a retry, and a sealed second attempt, a late acceptance for attempt one is stale while attempt two's receipt admits; a failed attempt can neither issue nor admit any verdict; at a moment past the pinned dependency receipt's validity an acceptance is blocked by the recheck while the upstream node's historical acceptance stands and a rejection still records; and end to end, the real `checkspan software-verifier` child checks a real repository under a pinned profile, its response is issued into a receipt bound to the real result artifact's digest, admission passes, and the node is accepted on replay with the stored receipt carrying the pinned profile identity.
+
+**Not claimed:** gate packets for undecidable verdicts (CS-21); signed operator decisions (CS-22); the CLI run workflow that strings dispatch, verification, issuance, and admission together (CS-20); revocation-driven un-acceptance (revocation events exist from CS-09 and block reuse via CS-11; nothing here rewrites history); hosted matrix for this commit (queued on push).
+
+**Acceptance:** CS-19 gate passed locally. Implementation commit SHA is recorded in the CS-20 entry.
 **Open blockers:** none.

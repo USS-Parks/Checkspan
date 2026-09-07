@@ -15,6 +15,7 @@ pub mod deps;
 pub mod digests;
 pub mod evidence;
 pub mod graph;
+pub mod receipts;
 pub mod scheduler;
 pub mod state;
 pub mod store;
