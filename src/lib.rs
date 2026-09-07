@@ -13,6 +13,7 @@ pub mod cli;
 pub mod contracts;
 pub mod deps;
 pub mod digests;
+pub mod evidence;
 pub mod graph;
 pub mod scheduler;
 pub mod state;

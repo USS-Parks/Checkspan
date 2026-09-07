@@ -32,9 +32,9 @@
       "name": "x",
       "kind": "code",
       "expected_type": {
-        "schema_id": "code_ref",
+        "schema_id": "patch_result",
         "version": 1,
-        "digest": "sha256:8e4d4c88a547c0fdc8e0127c26c01a936277beb03ff7fab33692e698a15d5df6"
+        "digest": "sha256:b1c1b8c067c32461290f77aae4d0e92e18f088dec996b37abbf1221a6a30bebc"
       },
       "required": true,
       "allowed_source_scope": [
