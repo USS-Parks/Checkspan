@@ -1,6 +1,6 @@
 //! The local run workflow: operate patch → check through one controller.
 //!
-//! Everything here composes what earlier prompts built — admission, the
+//! Everything here composes the crate's other modules — admission, the
 //! store, the scheduler, evidence resolution, the verifier host, the two
 //! built-in verifiers, receipts, and the retry policy — into commands the
 //! CLI exposes. One `step` performs one action: verify a sealed attempt

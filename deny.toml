@@ -15,7 +15,7 @@ wildcards = "deny"
 unknown-registry = "deny"
 unknown-git = "deny"
 
-# Checkspan's own distribution terms are settled before publication (PSPR §6);
+# Checkspan's own distribution terms are settled before any publication;
 # third-party licenses are still checked.
 [licenses.private]
 ignore = true

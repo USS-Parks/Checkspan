@@ -238,7 +238,8 @@ fn request(
     }
 }
 
-/// Run the real `checkspan software-verifier` child under the CS-17 host.
+/// Run the real `checkspan software-verifier` child under the bounded
+/// process host.
 /// `PATH` is granted so the verifier can find `git` and the platform's
 /// process utilities; nothing else of the host environment is.
 fn run_verifier(

@@ -262,7 +262,7 @@ fn a_failing_candidate_is_rejected_retried_and_exhausted_to_a_gate() {
 
     let (_, status) = pilot.status();
     assert_eq!(node_status(&status, "cs_patch"), "accepted");
-    // Since CS-21 the exhausted gate route opens a real packet.
+    // The exhausted gate route opens a real packet.
     assert_eq!(node_status(&status, "cs_ci"), "gated");
     assert_eq!(status["budget"]["consumed"], 3);
 }

@@ -1,7 +1,8 @@
 //! The first software-check verifier: run the required checks on one exact
 //! candidate and report what actually happened.
 //!
-//! The verifier is a protocol child (CS-17): it reads one request on
+//! The verifier is a protocol child of the verifier host: it reads one
+//! request on
 //! standard input and writes one response on standard output. What to run
 //! comes from a **pinned validation profile** — a document whose digest the
 //! contract pinned as the verifier digest — never from the candidate. The

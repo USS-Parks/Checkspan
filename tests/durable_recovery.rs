@@ -1,13 +1,13 @@
-//! M2 acceptance exercise: durable recovery and run inspection on real
-//! SQLite files with real processes. A controller killed in the middle of a
+//! Durable recovery and run inspection on real SQLite files with real
+//! processes. A controller killed in the middle of a
 //! claim transaction leaves nothing behind; claims, counters, and fencing
 //! survive closing and reopening the file; waiting, failed, gated,
 //! accepted, and cancelled runs replay to the same views after a restart;
 //! and no accepted state exists without its receipt.
 //!
 //! When `CHECKSPAN_EVIDENCE_OUT` names a directory, the inspection test also
-//! writes the views and row counts it observed there as JSON, for the
-//! acceptance record.
+//! writes the views and row counts it observed there as JSON, so the same
+//! run on two machines can be compared byte for byte.
 
 mod common;
 

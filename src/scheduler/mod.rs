@@ -11,7 +11,8 @@
 //! `max_active` claims (default one) are held at a time, and nodes that need
 //! exclusive access to a resource an active claim holds are skipped, so
 //! independent nodes sharing a checkout serialize. No command is executed
-//! here; the worker protocol is later work.
+//! here; running the claimed work belongs to the controller and the
+//! verifier host.
 
 use std::fmt;
 

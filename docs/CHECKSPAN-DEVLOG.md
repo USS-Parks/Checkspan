@@ -612,3 +612,16 @@ No git worktree other than the canonical checkout is registered. No unpublished 
 
 **Acceptance:** CS-21 gate passed locally. Implementation commit SHA is recorded in the CS-22 entry.
 **Open blockers:** none for CS-21. **CS-22 requires Basho's signing identity and live signer evidence; execution pauses there for the explicit signer stop.**
+
+## MAINT-01 — Source audit for build-process artifacts
+
+**Date:** 2026-09-07. **Requested by:** Basho, before starting CS-22.
+**Scope:** comments, shipped prose, and configuration only; no behavior change.
+
+**Method, run twice end to end:** a grep matrix over `src`, `tests`, `schemas`, `examples`, the README, `Cargo.toml`, `deny.toml`, and the CI workflow for roster identifiers, milestone names, session vocabulary, incompleteness confessions, bare debt markers, AI-tell prose, marketing adjectives, and emoji; a read of every comment line in the crate and every shipped JSON description; a check that every file cited from shipped source exists and that the examples index matches the directory; then the repository's own no-slop scanner in full-tree mode and the complete verify ladder.
+
+**Found and fixed (nine files):** roster identifiers in three comments (the software verifier's module doc, one local-run test comment, one software-verifier test doc); a stale scheduler module doc that called executed work a later addition after the verifier host already existed; a controller module doc that described the crate in build-order terms; milestone vocabulary in the durable-recovery test header; a planning-document citation in a `deny.toml` comment; a roster identifier in the ledger guide; and a README status section that both narrated the build plan and had gone stale. The README now describes what the software does, what it refuses to fake, and where the project records live.
+
+**Found and kept, deliberately:** `basho` as the operator identity in fixtures and examples (the product's real operator); `codex/**` in the CI trigger and fixture locators (real branch names of this repository); the emoji in the RFC 8785 canonicalization vector (the specification's own example); the milestone-named guide filenames (renaming them would break recorded links for no behavior gain).
+
+**Verification:** grep matrix clean on the second pass; `no-slop-scan.sh full` clean; `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, and `cargo test --locked` (185 tests) all passed after the edits.

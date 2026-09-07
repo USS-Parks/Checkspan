@@ -26,7 +26,7 @@ The store path is chosen by whoever opens it; there is no default yet. Keep it o
 
 - It does not run or verify anything. Attempts are sealed by whoever holds the claim; M3 adds the worker protocol and the software verifier.
 - It does not detect a dead controller; reclaim is an operator or controller decision.
-- It does not open gate packets on exhaustion; the budget module reports `Exhausted { route: gate }` and CS-21 builds the packet.
+- It does not open gate packets on exhaustion itself; the budget module reports `Exhausted { route: gate }` and the gate module builds the packet.
 - It is not tamper-proof. A writable local file can be edited with any SQLite tool; the ledger's promises hold for the product's own operations.
 
 ## Reproducing the acceptance evidence
