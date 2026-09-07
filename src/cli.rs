@@ -68,6 +68,98 @@ pub enum Command {
         #[arg(long)]
         out: PathBuf,
     },
+    /// Run the built-in patch-capture verifier as a protocol child,
+    /// checking the artifact at --artifact against the request's candidate.
+    PatchVerifier {
+        /// The patch result artifact to check.
+        #[arg(long)]
+        artifact: PathBuf,
+    },
+    /// Operate a local run: create it, advance it, inspect it, cancel a
+    /// node. Progress is durable in the store; a fresh process resumes
+    /// where the ledger says the run is.
+    #[command(subcommand)]
+    Run(RunCommand),
+}
+
+/// The local run workflow.
+#[derive(Debug, Subcommand)]
+pub enum RunCommand {
+    /// Validate and admit the graph, store it, and create the run.
+    Create {
+        /// The ledger file.
+        #[arg(long)]
+        store: PathBuf,
+        /// The graph document.
+        #[arg(long)]
+        graph: PathBuf,
+        /// The run to create.
+        #[arg(long)]
+        run_id: String,
+    },
+    /// Report every node's view, the budget, and active claims as JSON.
+    Status {
+        /// The ledger file.
+        #[arg(long)]
+        store: PathBuf,
+        /// The graph document; must match the stored revision.
+        #[arg(long)]
+        graph: PathBuf,
+        /// The run.
+        #[arg(long)]
+        run_id: String,
+    },
+    /// Perform one action: verify a sealed attempt or claim the next node.
+    Step(DriveArgs),
+    /// Step until the run is complete, blocked, exhausted, or idle.
+    Drive(DriveArgs),
+    /// Cancel one node, releasing its active claim.
+    Cancel {
+        /// The ledger file.
+        #[arg(long)]
+        store: PathBuf,
+        /// The graph document; must match the stored revision.
+        #[arg(long)]
+        graph: PathBuf,
+        /// The run.
+        #[arg(long)]
+        run_id: String,
+        /// The node to cancel.
+        #[arg(long)]
+        node: String,
+        /// This controller's identity.
+        #[arg(long)]
+        controller: String,
+    },
+}
+
+/// Arguments shared by `run step` and `run drive`.
+#[derive(Debug, clap::Args)]
+pub struct DriveArgs {
+    /// The ledger file.
+    #[arg(long)]
+    pub store: PathBuf,
+    /// The graph document; must match the stored revision.
+    #[arg(long)]
+    pub graph: PathBuf,
+    /// The run.
+    #[arg(long)]
+    pub run_id: String,
+    /// The candidate repository for code evidence.
+    #[arg(long)]
+    pub repo: Option<PathBuf>,
+    /// The pinned software validation profile.
+    #[arg(long)]
+    pub software_profile: Option<PathBuf>,
+    /// Where result artifacts are written.
+    #[arg(long)]
+    pub artifacts: PathBuf,
+    /// This controller's identity.
+    #[arg(long)]
+    pub controller: String,
+    /// The moment "now", RFC 3339; defaults to a fixed development instant.
+    #[arg(long, default_value = "2026-09-06T12:00:00Z")]
+    pub now: String,
 }
 
 /// Parse `args`, run the command, print its JSON to stdout, and return the
@@ -82,6 +174,10 @@ where
         Ok(cli) => {
             if let Command::SoftwareVerifier { profile, out } = &cli.command {
                 let code = crate::verifiers::software::run_child(profile, out);
+                return ExitCode::from(code as u8);
+            }
+            if let Command::PatchVerifier { artifact } = &cli.command {
+                let code = crate::verifiers::patch::run_child(artifact);
                 return ExitCode::from(code as u8);
             }
             let (code, output) = execute(&cli.command);
@@ -106,6 +202,27 @@ pub fn execute(command: &Command) -> (u8, Value) {
             }
             Err(message) => (EXIT_IO, io_error_json("validate", file, &message)),
         },
+        Command::Run(command) => match run_command(command) {
+            Ok(value) => (0, value),
+            Err(e) => (
+                EXIT_INVALID,
+                json!({
+                    "command": "run",
+                    "diagnostics": [{ "stage": "run", "path": "", "message": e.to_string() }],
+                }),
+            ),
+        },
+        Command::PatchVerifier { .. } => (
+            EXIT_USAGE,
+            json!({
+                "command": "patch-verifier",
+                "diagnostics": [{
+                    "stage": "usage",
+                    "path": "",
+                    "message": "the patch verifier runs as a protocol child; invoke the checkspan binary directly",
+                }],
+            }),
+        ),
         Command::SoftwareVerifier { .. } => (
             EXIT_USAGE,
             json!({
@@ -331,4 +448,47 @@ fn graph_json(graph: &AdmittedGraph) -> Value {
 /// the JSON.
 pub fn record_kind_of(report: &Report) -> Option<RecordKind> {
     report.record.as_ref().map(ValidatedRecord::kind)
+}
+
+/// Dispatch one run subcommand to the controller.
+fn run_command(command: &RunCommand) -> Result<Value, crate::controller::RunError> {
+    use crate::controller;
+    let ts = |text: &str| {
+        crate::contracts::Timestamp::new(text)
+            .map_err(|e| crate::controller::RunError(format!("--now: {e}")))
+    };
+    match command {
+        RunCommand::Create {
+            store,
+            graph,
+            run_id,
+        } => controller::create(store, graph, run_id),
+        RunCommand::Status {
+            store,
+            graph,
+            run_id,
+        } => controller::status(store, graph, run_id, &ts("2026-09-06T12:00:00Z")?),
+        RunCommand::Step(args) => controller::step(&workspace(args), &args.run_id, &ts(&args.now)?),
+        RunCommand::Drive(args) => {
+            controller::drive(&workspace(args), &args.run_id, &ts(&args.now)?, 100)
+        }
+        RunCommand::Cancel {
+            store,
+            graph,
+            run_id,
+            node,
+            controller: who,
+        } => controller::cancel(store, graph, run_id, node, who),
+    }
+}
+
+fn workspace(args: &DriveArgs) -> crate::controller::Workspace {
+    crate::controller::Workspace {
+        store: args.store.clone(),
+        graph: args.graph.clone(),
+        repo: args.repo.clone(),
+        software_profile: args.software_profile.clone(),
+        artifacts: args.artifacts.clone(),
+        controller: args.controller.clone(),
+    }
 }

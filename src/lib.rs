@@ -11,6 +11,7 @@ pub mod adapters;
 pub mod budget;
 pub mod cli;
 pub mod contracts;
+pub mod controller;
 pub mod deps;
 pub mod digests;
 pub mod evidence;

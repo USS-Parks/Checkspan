@@ -9,9 +9,9 @@
 - Implementation branch: `codex/checkspan-m1`. Per Basho's instruction of 2026-09-06, every completed prompt is committed on that branch, fast-forwarded into `main`, and both refs are pushed.
 - M2 authorization: **"Run M2 STS" received from Basho on 2026-09-06** after the M1 report; CS-08 through CS-14 are authorized, with the M2 boundary (after CS-14) as the next explicit stop. Basho reiterated: commit and merge to `main` after every prompt.
 - M3 authorization: **"Run M3 STS now please" received from Basho on 2026-09-06** after the M2 report. CS-15 through CS-24, CS-R01 through CS-R12, and CS-25 are authorized in order. Stops that remain inside M3 because the approval named no signer, corpus, model, or budget: first use of Basho's signing identity (CS-22), admission of the pilot corpus (CS-R02), first model endpoint and its egress and usage budget (CS-R05), the evaluation usage budget (CS-R11), and the M3 boundary after CS-25.
-- Current prompt: **CS-19 complete; CS-20 next.**
+- Current prompt: **CS-20 complete; CS-21 next.**
 - Session handoff: see [CHECKSPAN-HANDOFF.md](../CHECKSPAN-HANDOFF.md) at the project root.
-- Implemented product behavior: `checkspan validate <file>` and `checkspan inspect <file>` over any supported record (now including `patch_result`), with graph admission (dependency resolution, port and type compatibility, cycles, hidden proof dependencies, external imports, gate wait chains, target closure, deterministic order) for graph documents; stable JSON output and exit codes; no dispatch, run store, or writes. Library code additionally provides the durable run ledger (M2) and, from CS-15, capture of exact local patch subjects from a Git repository.
+- Implemented product behavior: `checkspan validate` and `inspect` over every supported record; `checkspan run create|status|step|drive|cancel` operating the local patch → check workflow against a durable store; and the two built-in protocol-child verifiers (`software-verifier`, `patch-verifier`). The library additionally provides the durable run ledger (M2), candidate capture (CS-15), evidence resolution (CS-16), the verifier host (CS-17), and receipts (CS-19).
 
 ## DOC-00 — Name, repository wiring, and review draft
 
@@ -559,4 +559,31 @@ No git worktree other than the canonical checkout is registered. No unpublished 
 **Not claimed:** gate packets for undecidable verdicts (CS-21); signed operator decisions (CS-22); the CLI run workflow that strings dispatch, verification, issuance, and admission together (CS-20); revocation-driven un-acceptance (revocation events exist from CS-09 and block reuse via CS-11; nothing here rewrites history); hosted matrix for this commit (queued on push).
 
 **Acceptance:** CS-19 gate passed locally. Implementation commit SHA is recorded in the CS-20 entry.
+**Open blockers:** none.
+
+## CS-20 — Connect the local run workflow
+
+**Date:** 2026-09-06.
+**Source SHA before work:** 23e9a3287a119b28e7798a7c83670f9f1dac6e70 (CS-19 implementation commit; `main`).
+
+**Changed paths:** `src/controller/mod.rs` (new); `src/verifiers/patch.rs` (new second built-in verifier); `src/cli.rs` (`run create|status|step|drive|cancel` and the `patch-verifier` protocol child); `src/verifiers/mod.rs`; `src/lib.rs`; `tests/local_run.rs` (new); this log; the verification ledger; the dependency record.
+
+**Design as implemented:** the controller composes what the roster already built, adding no second orchestration path. `run create` validates and admits the graph document, stores it, and creates the run; every later command re-reads the graph file and binds it to the stored revision, so an edited file is refused rather than silently obeyed. One `step` performs one action, chosen from the ledger alone: a node whose sealed attempt awaits its verdict is verified first — which is also how a fresh process resumes after a crash between sealing and admission — otherwise the CS-12 scheduler claims the next ready node under budgets, dependencies, and resource rules. Executing a claim freezes evidence through the CS-16 resolver (every `code` port is offered the working tree of the registered repository; the CS-13 narrowing from a retry is applied), then: a `patch_result` task's artifact is the captured candidate record itself, sealed through the scheduler's fenced completion and verified by the new **patch-capture verifier**, whose pinned digest is the bundled `patch_result` schema text and whose checks are that the artifact validates and that the checkout still is the frozen subject against the frozen base; a `software_check_result` check node runs the CS-18 software verifier as its execution, seals the typed report it wrote as the result artifact, and admits the receipt CS-19-style. Verifier process failures seal the attempt as failed, timed out, or cancelled and route through the CS-13 retry policy; verification failures on an already-sealed attempt leave it sealed for the next step to retry. `run drive` loops steps to a terminal report (`complete`, `blocked`, `idle`, or `budget_exhausted`), `run status` prints every node view, the budget, and active claims as stable JSON, and `run cancel` releases a node's claim and cancels it. Receipts are issued as `rcpt-<node>-<attempt>` with the controller named as issuer.
+
+**Commands and outcomes (local_native, Windows x64):**
+
+| Command | Outcome |
+| --- | --- |
+| `cargo fmt --all -- --check` | passed |
+| `cargo clippy --locked --all-targets -- -D warnings` | passed |
+| `cargo test --locked` | passed: 180 harness tests (175 prior + 5 local run) + 12 verifier process cases |
+| `cargo deny check` / `cargo audit` | not rerun; no crate dependency change since CS-09 |
+
+**Gate evidence (V1/V3/V4; every CLI command is a separate real process against the same SQLite store, so every test is a restart test):** a real submitted candidate drives patch capture → acceptance → software check → acceptance in two verified actions and a `complete`, the run's two artifacts validate against their bundled schemas, the budget shows two attempts consumed, and re-driving a finished run performs no action while `run status` output is byte-identical across processes; a failing candidate is captured and accepted at the patch node, rejected at the check node with the failing check, retried once under the policy, rejected again, and exhausted to the `gate` route with three attempts consumed and the run honestly idle; driving without the repository seals resolution failures as failed attempts naming the unregistered source, exhausts the policy, and leaves the patch node `failed` with the check node open and blocked on it by name; cancelling the target records `cancelled`, the dependency still completes, and the drive reports why the run cannot finish; an edited graph file is refused against the stored revision by digest.
+
+**Semantics worth knowing:** the patch-capture verifier re-captures the working tree, so a `commit`-kind candidate demands a clean checkout at that commit when verified — the same rule the software verifier enforces. The `--now` instant is an explicit argument (defaulting to a fixed development instant) because the controller deliberately has no ambient clock; CS-R05's budgets will revisit time sources. A run is driven by one controller invocation at a time in these tests; concurrent controllers were proven safe at CS-12/CS-14 and return with CS-R04.
+
+**Not claimed:** gate packets for the exhausted `gate` route (CS-21, reported but not built); signed decisions (CS-22); review packets (CS-23); end-to-end failure/repair scenarios beyond these (CS-24); `rag`, `logs`, and `human` ports in the pilot graph (the resolver refuses or omits them as CS-16 established); hosted matrix for this commit (queued on push).
+
+**Acceptance:** CS-20 gate passed locally. Implementation commit SHA is recorded in the CS-21 entry.
 **Open blockers:** none.

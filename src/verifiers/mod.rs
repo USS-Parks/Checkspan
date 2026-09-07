@@ -5,4 +5,5 @@
 //! compiled into one executable changes distribution, not the trust
 //! boundary.
 
+pub mod patch;
 pub mod software;
